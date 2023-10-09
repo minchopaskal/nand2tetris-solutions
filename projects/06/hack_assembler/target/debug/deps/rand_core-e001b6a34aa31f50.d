@@ -1,0 +1,11 @@
+C:\Users\MinchoP\Desktop\nand2tetris\nand2tetris\projects\06\hack_assembler\target\debug\deps\rand_core-e001b6a34aa31f50.rmeta: C:\Users\MinchoP\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rand_core-0.6.4\src\lib.rs C:\Users\MinchoP\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rand_core-0.6.4\src\block.rs C:\Users\MinchoP\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rand_core-0.6.4\src\error.rs C:\Users\MinchoP\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rand_core-0.6.4\src\impls.rs C:\Users\MinchoP\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rand_core-0.6.4\src\le.rs
+
+C:\Users\MinchoP\Desktop\nand2tetris\nand2tetris\projects\06\hack_assembler\target\debug\deps\librand_core-e001b6a34aa31f50.rlib: C:\Users\MinchoP\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rand_core-0.6.4\src\lib.rs C:\Users\MinchoP\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rand_core-0.6.4\src\block.rs C:\Users\MinchoP\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rand_core-0.6.4\src\error.rs C:\Users\MinchoP\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rand_core-0.6.4\src\impls.rs C:\Users\MinchoP\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rand_core-0.6.4\src\le.rs
+
+C:\Users\MinchoP\Desktop\nand2tetris\nand2tetris\projects\06\hack_assembler\target\debug\deps\rand_core-e001b6a34aa31f50.d: C:\Users\MinchoP\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rand_core-0.6.4\src\lib.rs C:\Users\MinchoP\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rand_core-0.6.4\src\block.rs C:\Users\MinchoP\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rand_core-0.6.4\src\error.rs C:\Users\MinchoP\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rand_core-0.6.4\src\impls.rs C:\Users\MinchoP\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rand_core-0.6.4\src\le.rs
+
+C:\Users\MinchoP\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rand_core-0.6.4\src\lib.rs:
+C:\Users\MinchoP\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rand_core-0.6.4\src\block.rs:
+C:\Users\MinchoP\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rand_core-0.6.4\src\error.rs:
+C:\Users\MinchoP\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rand_core-0.6.4\src\impls.rs:
+C:\Users\MinchoP\.cargo\registry\src\index.crates.io-6f17d22bba15001f\rand_core-0.6.4\src\le.rs:

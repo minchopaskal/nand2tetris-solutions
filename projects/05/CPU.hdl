@@ -1,0 +1,104 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/05/CPU.hdl
+
+/**
+ * The Hack CPU (Central Processing unit), consisting of an ALU,
+ * two registers named A and D, and a program counter named PC.
+ * The CPU is designed to fetch and execute instructions written in 
+ * the Hack machine language. In particular, functions as follows:
+ * Executes the inputted instruction according to the Hack machine 
+ * language specification. The D and A in the language specification
+ * refer to CPU-resident registers, while M refers to the external
+ * memory location addressed by A, i.e. to Memory[A]. The inM input 
+ * holds the value of this location. If the current instruction needs 
+ * to write a value to M, the value is placed in outM, the address 
+ * of the target location is placed in the addressM output, and the 
+ * writeM control bit is asserted. (When writeM==0, any value may 
+ * appear in outM). The outM and writeM outputs are combinational: 
+ * they are affected instantaneously by the execution of the current 
+ * instruction. The addressM and pc outputs are clocked: although they 
+ * are affected by the execution of the current instruction, they commit 
+ * to their new values only in the next time step. If reset==1 then the 
+ * CPU jumps to address 0 (i.e. pc is set to 0 in next time step) rather 
+ * than to the address resulting from executing the current instruction. 
+ */
+
+CHIP CPU {
+
+    IN  inM[16],         // M value input  (M = contents of RAM[A])
+        instruction[16], // Instruction for execution
+        reset;           // Signals whether to re-start the current
+                         // program (reset==1) or continue executing
+                         // the current program (reset==0).
+
+    OUT outM[16],        // M value output
+        writeM,          // Write to M? 
+        addressM[15],    // Address in data memory (of M)
+        pc[15];          // address of next instruction
+
+    PARTS:
+    // A-Instruction or C-Instruction? 
+        And(a=instruction[15], b=true, out=cInstr);
+        Not(in=cInstr, out=aInstr);
+
+    // Load into register A
+        Mux16(a=instruction, b=aluOutA, sel=cInstr, out=outI);
+        // Load in A-reg if it's A-instr or C-instr 12th bit is 1
+        Or(a=aInstr, b=instruction[5], out=ldA);
+        ARegister(in=outI, load=ldA, out=aOut, out[0..14]=addressM);
+    
+    // Load intro register D
+        And(a=cInstr, b=instruction[4], out=ldD); // only if C-Instr and instr d2 bit is true
+        DRegister(in=aluOutD, load=ldD, out=aluInX);
+    
+    // Load into the ALU
+        Mux16(a=aOut, b=inM, sel=instruction[12], out=aluInY);
+        // If aInstr, NOP
+        Mux(a=instruction[11], b=true, sel=aInstr, out=zx);
+        Mux(a=instruction[10], b=false, sel=aInstr, out=nx);
+        Mux(a=instruction[9], b=true, sel=aInstr, out=zy);
+        Mux(a=instruction[8], b=false, sel=aInstr, out=ny);
+        Mux(a=instruction[7], b=true, sel=aInstr, out=f);
+        Mux(a=instruction[6], b=false, sel=aInstr, out=no);
+        ALU(
+            x=aluInX,  
+            y=aluInY,        
+            zx=zx, // zero the x input?
+            nx=nx, // negate the x input?
+            zy=zy, // zero the y input?
+            ny=ny, // negate the y input?
+            f=f,  // compute out = x + y (if 1) or x & y (if 0)
+            no=no, // negate the out output?
+
+            out=aluOutA,
+            out=aluOutD,
+            out=outM,
+            zr=zr,
+            ng=ng
+        );
+
+    // writeM only if C-Instr and d1 bit is true
+    And(a=cInstr, b=instruction[3], out=writeM);
+
+    // Handle jumps
+        // < 0
+        And(a=instruction[2], b=ng, out=less);
+        // == 0
+        And(a=instruction[1], b=zr, out=eq);
+        // > 0
+        Not(in=zr, out=nzr);
+        Not(in=ng, out=ge);
+        And(a=ge, b=nzr, out=pos);
+        And(a=instruction[0], b=pos, out=gt);
+
+        Or(a=less, b=eq, out=tmpLd1);
+        Or(a=tmpLd1, b=gt, out=tmpLd2);
+        And(a=cInstr, b=tmpLd2, out=ldPC);
+        
+        Not(in=ldPC, out=noJmp);
+        Or(a=noJmp, b=aInstr, out=inc);
+
+    PC(in=aOut, load=ldPC, inc=inc, reset=reset, out[0..14]=pc);
+}
