@@ -367,6 +367,52 @@ fn not(buf: &mut BufWriter<fs::File>, instr_cnt: &mut i32) -> std::io::Result<()
     Ok(())
 }
 
+fn call(out_file: &mut BufWriter<fs::File>, instr_cnt: &mut i32, name: &str, nargs: i32, curr_fun: &str, call_idx: &mut i32) -> std::io::Result<()> {
+    // 45 instructions before return label
+    writeln!(out_file, "@{}", 45 + *instr_cnt)?;
+    writeln!(out_file, "D=A")?;
+    *instr_cnt += 2;
+    push_write_and_inc(out_file, instr_cnt)?; // 7
+
+    writeln!(out_file, "@LCL")?;
+    writeln!(out_file, "D=M")?;
+    *instr_cnt += 2;
+    push_write_and_inc(out_file, instr_cnt)?; // 14
+
+    writeln!(out_file, "@ARG")?;
+    writeln!(out_file, "D=M")?;
+    *instr_cnt += 2;
+    push_write_and_inc(out_file, instr_cnt)?; // 21
+
+    writeln!(out_file, "@THIS")?;
+    writeln!(out_file, "D=M")?;
+    *instr_cnt += 2;
+    push_write_and_inc(out_file, instr_cnt)?; // 28
+
+    writeln!(out_file, "@THAT")?;
+    writeln!(out_file, "D=M")?;
+    *instr_cnt += 2;
+    push_write_and_inc(out_file, instr_cnt)?; // 35
+
+    writeln!(out_file, "@SP")?;
+    writeln!(out_file, "D=M")?;
+    writeln!(out_file, "@LCL")?;
+    writeln!(out_file, "M=D")?;
+    writeln!(out_file, "@{}", 5 + nargs)?;
+    writeln!(out_file, "D=D-A")?;
+    writeln!(out_file, "@ARG")?;
+    writeln!(out_file, "M=D")?;
+
+    writeln!(out_file, "@{}", generate_entry_point(name))?;
+    writeln!(out_file, "0;JMP")?; // 45
+
+    *instr_cnt += 10;
+
+    writeln!(out_file, "({})", generate_return_addr(curr_fun, call_idx))?;
+
+    Ok(())
+}
+
 fn generate_label(curr_fun: &str, label: &str) -> String {
     let mut res = String::new();
     if !curr_fun.is_empty() {
@@ -533,47 +579,7 @@ fn output(bytecode: &Vec<Op>, out_file: &mut BufWriter<fs::File>, instr_cnt: &mu
             Op::Call(name, nargs) => {                
                 writeln!(out_file, "// call {} {}", name, nargs)?;
 
-                // 45 instructions before return label
-                writeln!(out_file, "@{}", 45 + *instr_cnt)?;
-                writeln!(out_file, "D=A")?;
-                *instr_cnt += 2;
-                push_write_and_inc(out_file, instr_cnt)?; // 7
-
-                writeln!(out_file, "@LCL")?;
-                writeln!(out_file, "D=M")?;
-                *instr_cnt += 2;
-                push_write_and_inc(out_file, instr_cnt)?; // 14
-
-                writeln!(out_file, "@ARG")?;
-                writeln!(out_file, "D=M")?;
-                *instr_cnt += 2;
-                push_write_and_inc(out_file, instr_cnt)?; // 21
-
-                writeln!(out_file, "@THIS")?;
-                writeln!(out_file, "D=M")?;
-                *instr_cnt += 2;
-                push_write_and_inc(out_file, instr_cnt)?; // 28
-
-                writeln!(out_file, "@THAT")?;
-                writeln!(out_file, "D=M")?;
-                *instr_cnt += 2;
-                push_write_and_inc(out_file, instr_cnt)?; // 35
-
-                writeln!(out_file, "@SP")?;
-                writeln!(out_file, "D=M")?;
-                writeln!(out_file, "@LCL")?;
-                writeln!(out_file, "M=D")?;
-                writeln!(out_file, "@{}", 5 + *nargs)?;
-                writeln!(out_file, "D=D-A")?;
-                writeln!(out_file, "@ARG")?;
-                writeln!(out_file, "M=D")?;
-
-                writeln!(out_file, "@{}", generate_entry_point(&name))?;
-                writeln!(out_file, "0;JMP")?; // 45
-
-                *instr_cnt += 10;
-
-                writeln!(out_file, "({})", generate_return_addr(&curr_fun, &mut call_idx))?;
+                call(out_file, instr_cnt, &name, *nargs, &curr_fun, &mut call_idx)?;
             },
             Op::Function(name, nlocals) => {
                 curr_fun = name.clone();
@@ -697,9 +703,18 @@ fn main() -> Result<(), Box<dyn Error>> {
     let out_filename = args[2].to_owned();
     let out_file = fs::File::create(out_filename)?;
     let mut out_writer = BufWriter::new(out_file);
-    writeln!(out_writer, "@Sys.init")?;
-    writeln!(out_writer, "0;JMP")?;
-    let mut instr_cnt = 2;
+
+    let mut instr_cnt = 0;
+    let mut call_idx = 0;
+    if in_files.len() > 1 {
+        writeln!(out_writer, "@256")?;
+        writeln!(out_writer, "D=A")?;
+        writeln!(out_writer, "@SP")?;
+        writeln!(out_writer, "M=D")?;
+        instr_cnt += 4;
+
+        call(&mut out_writer, &mut instr_cnt, "Sys.init", 0, "_", &mut call_idx)?;
+    }
 
     let mut bytecode = Vec::new();
     for in_filepath in in_files {
