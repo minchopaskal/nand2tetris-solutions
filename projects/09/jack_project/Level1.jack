@@ -1,0 +1,74 @@
+class Level1 {
+    field Map map;
+
+    constructor Level1 new() {
+        var Array m;
+        var Array test;
+        var Position sp;
+        var int i, j;
+        var String name;
+
+        let m = Array.new(512);
+        let i = 0;
+        while (i < 512) {
+            let m[i] = 0;
+            let i = i + 1;
+        } 
+
+        let i = 0;
+        while (i < 32) {
+            let m[0 * 32 + i] = 1;
+            let i = i + 1;
+        }
+        let i = 0;
+        while (i < 32) {
+            let m[15 * 32 + i] = 1;
+            let i = i + 1;
+        }
+        let sp = Position.new(12, 8);
+        let m[32] = 1;
+        let m[63] = 1;
+        let m[64] = 1;
+        let m[95] = 1;
+        let m[96] = 1;
+        let m[127] = 1;
+        let m[128] = 1;
+        let m[159] = 1;
+        let m[160] = 1;
+        let m[191] = 1;
+        let m[192] = 1;
+        let m[223] = 1;
+        let m[224] = 1;
+        let m[255] = 1;
+        let m[256] = 1;
+        let m[279] = 3;
+        let m[287] = 1;
+        let m[288] = 1;
+        let m[319] = 1;
+        let m[320] = 1;
+        let m[351] = 1;
+        let m[352] = 1;
+        let m[383] = 1;
+        let m[384] = 1;
+        let m[415] = 1;
+        let m[416] = 1;
+        let m[447] = 1;
+        let m[448] = 1;
+        let m[479] = 1;
+
+        let name = "Level1";
+        let map = Map.new(m, sp, name);
+
+        return this;
+    }
+
+    method void dispose() {
+        do map.dispose();
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    method Map getMap() {
+        return map;
+    }
+}

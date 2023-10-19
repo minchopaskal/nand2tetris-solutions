@@ -1,0 +1,94 @@
+class MapDrawer {
+    function void draw(int x, int y, int type) {
+        if (type = 0) {
+            return;
+        }
+
+        if (type = 1) {
+            do MapDrawer.drawBrick(x, y);
+        }
+
+        if (type = 2) {
+            do MapDrawer.drawBoulder(x, y);
+        }
+
+        if (type = 3) {
+            do MapDrawer.drawEscape(x, y);
+        }
+
+        return;
+    } 
+
+    function void drawEscape(int x, int y) {
+        var int location, memAddress;
+
+        let location = y * 512 + x;
+        
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, -1);
+        do Memory.poke(memAddress+32, -16381);
+        do Memory.poke(memAddress+64, -16381);
+        do Memory.poke(memAddress+96, -1);
+        do Memory.poke(memAddress+128, -24571);
+        do Memory.poke(memAddress+160, -16387);
+        do Memory.poke(memAddress+192, -28663);
+        do Memory.poke(memAddress+224, -24583);
+        do Memory.poke(memAddress+256, -30703);
+        do Memory.poke(memAddress+288, -28687);
+        do Memory.poke(memAddress+320, -31711);
+        do Memory.poke(memAddress+352, -30751);
+        do Memory.poke(memAddress+384, -32191);
+        do Memory.poke(memAddress+416, -31807);
+        do Memory.poke(memAddress+448, -32383);
+        do Memory.poke(memAddress+480, -1);
+        return;
+    }
+
+    function void drawBrick(int x, int y) {
+        var int location, memAddress;
+
+        let location = y * 512 + x;
+      
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 4162);
+        do Memory.poke(memAddress+32, 4162);
+        do Memory.poke(memAddress+64, 4162);
+        do Memory.poke(memAddress+96, -1);
+        do Memory.poke(memAddress+128, -31728);
+        do Memory.poke(memAddress+160, -31728);
+        do Memory.poke(memAddress+192, -31728);
+        do Memory.poke(memAddress+224, -1);
+        do Memory.poke(memAddress+256, 8452);
+        do Memory.poke(memAddress+288, 8452);
+        do Memory.poke(memAddress+320, 8452);
+        do Memory.poke(memAddress+352, -1);
+        do Memory.poke(memAddress+384, -31728);
+        do Memory.poke(memAddress+416, -31728);
+        do Memory.poke(memAddress+448, -31728);
+        do Memory.poke(memAddress+480, -1);
+        return;
+    }
+
+    function void drawBoulder(int x, int y) {
+        var int location, memAddress;
+        let location = y * 512 + x;
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 0);
+        do Memory.poke(memAddress+32, 0);
+        do Memory.poke(memAddress+64, 2016);
+        do Memory.poke(memAddress+96, 6192);
+        do Memory.poke(memAddress+128, 12680);
+        do Memory.poke(memAddress+160, 16900);
+        do Memory.poke(memAddress+192, 17506);
+        do Memory.poke(memAddress+224, -19439);
+        do Memory.poke(memAddress+256, -15863);
+        do Memory.poke(memAddress+288, -32719);
+        do Memory.poke(memAddress+320, 17283);
+        do Memory.poke(memAddress+352, 14444);
+        do Memory.poke(memAddress+384, 1040);
+        do Memory.poke(memAddress+416, 992);
+        do Memory.poke(memAddress+448, 0);
+        do Memory.poke(memAddress+480, 0);
+        return;
+    }
+}

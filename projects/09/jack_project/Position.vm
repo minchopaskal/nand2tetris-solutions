@@ -1,0 +1,152 @@
+function Position.new 0
+push constant 2
+call Memory.alloc 1
+pop pointer 0
+push argument 0
+pop this 0
+push argument 1
+pop this 1
+push pointer 0
+return
+function Position.dispose 0
+push argument 0
+pop pointer 0
+push pointer 0
+call Memory.deAlloc 1
+pop temp 0
+push constant 0
+return
+function Position.getScreenX 0
+push argument 0
+pop pointer 0
+push this 0
+push constant 16
+call Math.multiply 2
+return
+function Position.getScreenY 0
+push argument 0
+pop pointer 0
+push this 1
+push constant 16
+call Math.multiply 2
+return
+function Position.getX 0
+push argument 0
+pop pointer 0
+push this 0
+return
+function Position.getY 0
+push argument 0
+pop pointer 0
+push this 1
+return
+function Position.setX 0
+push argument 0
+pop pointer 0
+push argument 1
+pop this 0
+push constant 0
+return
+function Position.setY 0
+push argument 0
+pop pointer 0
+push argument 1
+pop this 1
+push constant 0
+return
+function Position.getRight 2
+push argument 0
+pop pointer 0
+push this 0
+push constant 31
+lt
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push this 0
+push constant 1
+add
+pop local 1
+goto IF_END0
+label IF_FALSE0
+push constant 0
+pop local 1
+label IF_END0
+push local 1
+push this 1
+call Position.new 2
+pop local 0
+push local 0
+return
+function Position.getDown 2
+push argument 0
+pop pointer 0
+push this 1
+push constant 15
+lt
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push this 1
+push constant 1
+add
+pop local 1
+goto IF_END0
+label IF_FALSE0
+push constant 0
+pop local 1
+label IF_END0
+push this 0
+push local 1
+call Position.new 2
+pop local 0
+push local 0
+return
+function Position.getLeft 2
+push argument 0
+pop pointer 0
+push this 0
+push constant 0
+gt
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push this 0
+push constant 1
+sub
+pop local 1
+goto IF_END0
+label IF_FALSE0
+push constant 31
+pop local 1
+label IF_END0
+push local 1
+push this 1
+call Position.new 2
+pop local 0
+push local 0
+return
+function Position.getUp 2
+push argument 0
+pop pointer 0
+push this 1
+push constant 0
+gt
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push this 1
+push constant 1
+sub
+pop local 1
+goto IF_END0
+label IF_FALSE0
+push constant 15
+pop local 1
+label IF_END0
+push this 0
+push local 1
+call Position.new 2
+pop local 0
+push local 0
+return

@@ -1,0 +1,401 @@
+function MapDrawer.draw 0
+push argument 2
+push constant 0
+eq
+if-goto IF_TRUE0
+goto IF_FALSE0
+label IF_TRUE0
+push constant 0
+return
+label IF_FALSE0
+push argument 2
+push constant 1
+eq
+if-goto IF_TRUE1
+goto IF_FALSE1
+label IF_TRUE1
+push argument 0
+push argument 1
+call MapDrawer.drawBrick 2
+pop temp 0
+label IF_FALSE1
+push argument 2
+push constant 2
+eq
+if-goto IF_TRUE2
+goto IF_FALSE2
+label IF_TRUE2
+push argument 0
+push argument 1
+call MapDrawer.drawBoulder 2
+pop temp 0
+label IF_FALSE2
+push argument 2
+push constant 3
+eq
+if-goto IF_TRUE3
+goto IF_FALSE3
+label IF_TRUE3
+push argument 0
+push argument 1
+call MapDrawer.drawEscape 2
+pop temp 0
+label IF_FALSE3
+push constant 0
+return
+function MapDrawer.drawEscape 2
+push argument 1
+push constant 512
+call Math.multiply 2
+push argument 0
+add
+pop local 0
+push constant 16384
+push local 0
+add
+pop local 1
+push local 1
+push constant 0
+add
+push constant 1
+neg
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 32
+add
+push constant 16381
+neg
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 64
+add
+push constant 16381
+neg
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 96
+add
+push constant 1
+neg
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 128
+add
+push constant 24571
+neg
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 160
+add
+push constant 16387
+neg
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 192
+add
+push constant 28663
+neg
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 224
+add
+push constant 24583
+neg
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 256
+add
+push constant 30703
+neg
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 288
+add
+push constant 28687
+neg
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 320
+add
+push constant 31711
+neg
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 352
+add
+push constant 30751
+neg
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 384
+add
+push constant 32191
+neg
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 416
+add
+push constant 31807
+neg
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 448
+add
+push constant 32383
+neg
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 480
+add
+push constant 1
+neg
+call Memory.poke 2
+pop temp 0
+push constant 0
+return
+function MapDrawer.drawBrick 2
+push argument 1
+push constant 512
+call Math.multiply 2
+push argument 0
+add
+pop local 0
+push constant 16384
+push local 0
+add
+pop local 1
+push local 1
+push constant 0
+add
+push constant 4162
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 32
+add
+push constant 4162
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 64
+add
+push constant 4162
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 96
+add
+push constant 1
+neg
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 128
+add
+push constant 31728
+neg
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 160
+add
+push constant 31728
+neg
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 192
+add
+push constant 31728
+neg
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 224
+add
+push constant 1
+neg
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 256
+add
+push constant 8452
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 288
+add
+push constant 8452
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 320
+add
+push constant 8452
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 352
+add
+push constant 1
+neg
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 384
+add
+push constant 31728
+neg
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 416
+add
+push constant 31728
+neg
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 448
+add
+push constant 31728
+neg
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 480
+add
+push constant 1
+neg
+call Memory.poke 2
+pop temp 0
+push constant 0
+return
+function MapDrawer.drawBoulder 2
+push argument 1
+push constant 512
+call Math.multiply 2
+push argument 0
+add
+pop local 0
+push constant 16384
+push local 0
+add
+pop local 1
+push local 1
+push constant 0
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 32
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 64
+add
+push constant 2016
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 96
+add
+push constant 6192
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 128
+add
+push constant 12680
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 160
+add
+push constant 16900
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 192
+add
+push constant 17506
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 224
+add
+push constant 19439
+neg
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 256
+add
+push constant 15863
+neg
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 288
+add
+push constant 32719
+neg
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 320
+add
+push constant 17283
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 352
+add
+push constant 14444
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 384
+add
+push constant 1040
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 416
+add
+push constant 992
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 448
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push local 1
+push constant 480
+add
+push constant 0
+call Memory.poke 2
+pop temp 0
+push constant 0
+return

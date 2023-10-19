@@ -1,0 +1,99 @@
+class Position {
+    field int x, y;
+
+    constructor Position new(int ix, int iy) {
+        let x = ix;
+        let y = iy;
+
+        return this;
+    }
+
+    method void dispose() {
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    method int getScreenX() {
+        return x * 16;
+    }
+
+    method int getScreenY() {
+        return y * 16;
+    }
+
+    method int getX() {
+        return x;
+    }
+
+    method int getY() {
+        return y;
+    }
+
+    method void setX(int ix) {
+        let x = ix;
+
+        return;
+    }
+
+    method void setY(int iy) {
+        let y = iy;
+
+        return;
+    }
+
+    method Position getRight() {
+        var Position p;
+        var int nx;
+
+        if (x < 31) {
+            let nx = x + 1;
+        } else { // x == 31
+            let nx = 0;
+        }
+
+        let p = Position.new(nx, y);
+        return p;
+    }
+
+    method Position getDown() {
+        var Position p;
+        var int ny;
+
+        if (y < 15) {
+            let ny = y + 1;
+        } else { // y == 15
+            let ny = 0;
+        }
+
+        let p = Position.new(x, ny);
+        return p;
+    }
+
+    method Position getLeft() {
+        var Position p;
+        var int nx;
+
+        if (x > 0) {
+            let nx = x - 1;
+        } else { // x == 0
+            let nx = 31;
+        }
+
+        let p = Position.new(nx, y);
+        return p;
+    }
+
+    method Position getUp() {
+        var Position p;
+        var int ny;
+
+        if (y > 0) {
+            let ny = y - 1;
+        } else { // y == 0
+            let ny = 15;
+        }
+
+        let p = Position.new(x, ny);
+        return p;
+    }
+}

@@ -1,0 +1,202 @@
+class Game {
+    field Position playerPos;
+    field Map map;
+    field int currLevel, maxLevel;
+    field bool newLevel;
+
+    constructor Game new(int iX, int iY) {
+        let currLevel = 0;
+        let newLevel = true;
+        let maxLevel = 1;
+
+        return this;
+    }
+    
+    method void dispose() {
+      do Memory.deAlloc(this);
+      return;
+    }
+
+    method void run() {
+        var char key, prevKey;
+        var bool exit, justPressed;
+        var int i;
+        var Level1 lvl1;
+        var Level2 lvl2;
+
+        let exit = false;
+        let key = 0;
+        let prevKey = 0;
+        let justPressed = true;
+
+        while (~exit) {
+            if (newLevel) {
+                let currLevel = currLevel + 1;
+                do erase();
+
+                if (currLevel = 1) {
+                    let lvl1 = Level1.new();
+                    let map = lvl1.getMap();
+                }
+                if (currLevel = 2) {    
+                    do lvl1.dispose();
+                    let lvl2 = Level2.new();
+                    let map = lvl2.getMap();
+                }
+
+                if (currLevel = 3) {
+                    do lvl2.dispose();
+                    do Output.moveCursor(11, 32 - 4);
+                    do Output.printString("You Win!");
+                    return;
+                }
+
+                let playerPos = map.getStartPos();
+                let newLevel = false;
+
+                do draw();
+            }
+
+            let key = Keyboard.keyPressed();
+            if (key = 0) {
+                let justPressed = true;
+            } else {
+                if (prevKey = key) {
+                    let justPressed = false;
+                } else {
+                    let justPressed = true;
+                }
+            }
+
+            if (justPressed) {
+                if (key = 68) {
+                    let newLevel = move(1);
+                }
+                if (key = 83) {
+                    let newLevel = move(2);
+                }
+                if (key = 65) {
+                    let newLevel = move(3);
+                }
+                if (key = 87) {
+                    let newLevel = move(4);
+                }
+            }
+            if (key = 81) {
+                let exit = true;
+            }
+
+            let prevKey = key;
+        }
+
+        if (currLevel = 0) {
+            do lvl1.dispose();
+        }
+        if (currLevel = 1) {
+            do lvl2.dispose();
+        }
+
+        return;
+    }
+
+    method bool move(int dir) {
+        var Position np;
+
+        if (dir = 1) {
+            let np = playerPos.getRight();
+        }
+        if (dir = 2) {
+            let np = playerPos.getDown();
+        }
+        if (dir = 3) {
+            let np = playerPos.getLeft();
+        }
+        if (dir = 4) {
+            let np = playerPos.getUp();
+        }
+
+        if (map.isEmpty(np)) {
+            do playerPos.dispose();
+            do erasePlayer();
+            let playerPos = np;
+            do drawPlayer();
+            return false;
+        }
+
+        if (map.checkWall(np)) {
+            do np.dispose();
+            return false;
+        }
+
+        if (map.checkEscape(np)) {
+            do np.dispose();
+            return true;
+        }
+
+        if (map.moveBoulder(np, dir)) {
+            do playerPos.dispose();
+            do erasePlayer();
+            let playerPos = np;
+            do draw();
+            return false;
+        }
+
+        do np.dispose();
+        return false;
+    }
+
+    method void erase() {
+        do Screen.setColor(false);
+        do Screen.drawRectangle(0, 0, 511, 255);
+        return;
+    }
+
+    method void erasePlayer() {
+        do Screen.setColor(false);
+        // do Output.printInt(playerPos.getScreenX());
+        // do Output.printChar(44);
+        // do Output.printInt(playerPos.getScreenY());
+        // do Output.printChar(44);
+
+        do Screen.drawRectangle(
+            playerPos.getScreenX(),
+            playerPos.getScreenY(),
+            playerPos.getScreenX()+15,
+            playerPos.getScreenY()+15
+        );
+        return;
+    }
+
+    method void draw() {
+        do drawPlayer();
+        do map.draw();
+
+        return;
+    }
+
+    method void drawPlayer() {
+        var int location;
+        var int memAddress;
+
+        let location = Math.multiply(playerPos.getScreenY(), 32) + Math.divide(playerPos.getScreenX(), 16);
+
+        let memAddress = 16384+location;
+        do Memory.poke(memAddress+0, 4064);
+        do Memory.poke(memAddress+32, 992);
+        do Memory.poke(memAddress+64, 576);
+        do Memory.poke(memAddress+96, 1568);
+        do Memory.poke(memAddress+128, 864);
+        do Memory.poke(memAddress+160, 320);
+        do Memory.poke(memAddress+192, 3888);
+        do Memory.poke(memAddress+224, 5160);
+        do Memory.poke(memAddress+256, 10836);
+        do Memory.poke(memAddress+288, 12876);
+        do Memory.poke(memAddress+320, 576);
+        do Memory.poke(memAddress+352, 1440);
+        do Memory.poke(memAddress+384, 2640);
+        do Memory.poke(memAddress+416, 3120);
+        do Memory.poke(memAddress+448, 7224);
+        do Memory.poke(memAddress+480, 15420);
+        return;
+    }
+}

@@ -1,0 +1,111 @@
+class Map {
+    field Array map;
+    field Position startPos;
+    field String name;
+
+    constructor Map new(Array m, Position p, String n) {
+        let map = m;
+        let startPos = p;
+        let name = n;
+
+        return this;
+    }
+
+    method void dispose() {
+        do startPos.dispose();
+        do map.dispose();
+
+        do Memory.deAlloc(this);
+        return;
+    }
+
+    method String getName() {
+        return name;
+    }
+
+    method Position getStartPos() {
+        return startPos;
+    }
+
+    method bool isEmpty(Position p) {
+        var int i;
+        let i = p.getY() * 32 + p.getX();
+
+        return (map[i] = 0);
+    }
+
+    method bool checkWall(Position p) {
+        var int i;
+        let i = p.getY() * 32 + p.getX();
+
+        return (map[i] = 1);
+    }
+
+    method bool checkBoulder(Position p) {
+        var int i;
+        let i = p.getY() * 32 + p.getX();
+
+        return (map[i] = 2);
+    }
+
+    method bool checkEscape(Position p) {
+        var int i;
+        let i = p.getY() * 32 + p.getX();
+
+        return (map[i] = 3);
+    }
+
+    method bool checkTrap(Position p) {
+        return false;
+    }
+
+    method bool moveBoulder(Position p, int dir) {
+        var Position np;
+        var int i, j;
+        let i = p.getY() * 32 + p.getX();
+
+        if (~(map[i] = 2)) {
+            return false;
+        }
+
+        if (dir = 1) {
+            let np = p.getRight();
+        }
+        if (dir = 2) {
+            let np = p.getDown();
+        }
+        if (dir = 3) {
+            let np = p.getLeft();
+        }
+        if (dir = 4) {
+            let np = p.getUp();
+        }
+        let j = np.getY() * 32 + np.getX();
+        if (~(isEmpty(np))) {
+            do np.dispose();
+            return false;
+        }
+
+        let map[i] = 0;
+        let map[j] = 2;
+
+        do np.dispose();
+        return true;
+    }
+
+    method void draw() {
+        var int i, x, y;
+        let i = 0;
+        while (i < 512) {
+            let y = Math.divide(i, 32);
+            let x = i - (y * 32);
+            do MapDrawer.draw(x, y, map[i]);
+
+            let i = i + 1;
+        }
+
+        do Output.moveCursor(0, 32 - 3);
+        do Output.printString(name);
+        return;
+    }
+}
