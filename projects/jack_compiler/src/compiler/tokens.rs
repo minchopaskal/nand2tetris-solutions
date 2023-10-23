@@ -17,10 +17,8 @@
     underscore ( '_' ) not starting with a digit.
 */
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub(crate) enum Keyword {
-    Unknown,
-
     Class,
     Constructor,
     Function,
@@ -44,10 +42,8 @@ pub(crate) enum Keyword {
     Return,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub(crate) enum Symbol {
-    Unknown,
-
     RightCurly,
     LeftCurly,
     RightRound,
@@ -72,7 +68,7 @@ pub(crate) enum Symbol {
 pub(crate) type Identifier<'a> = &'a str;
 
 #[derive(Debug, PartialEq)]
-pub(crate) enum TokenKind<'a> {
+pub(crate) enum TokenData<'a> {
     Keyword(Keyword),
     Symbol(Symbol),
     Int(i32),
@@ -80,9 +76,30 @@ pub(crate) enum TokenKind<'a> {
     Identifier(Identifier<'a>),
 }
 
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+pub(crate) enum TokenKind {
+    Keyword,
+    Symbol,
+    Int,
+    String,
+    Identifier,
+}
+
+impl From<&TokenData<'_>> for TokenKind {
+    fn from(value: &TokenData<'_>) -> Self {
+        match value {
+            TokenData::Symbol(_) => TokenKind::Symbol,
+            TokenData::Keyword(_) => TokenKind::Keyword,
+            TokenData::Int(_) => TokenKind::Int,
+            TokenData::String(_) => TokenKind::String,
+            TokenData::Identifier(_) => TokenKind::Identifier,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub(crate) struct Token<'a> {
-    pub(crate) kind: TokenKind<'a>,
+    pub(crate) data: TokenData<'a>,
     pub(crate) file: &'a str,
     pub(crate) line: usize,
 }
