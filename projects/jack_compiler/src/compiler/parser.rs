@@ -95,7 +95,7 @@ impl<'a> Parser<'a> {
         ptr: &mut usize,
     ) -> Result<ClassNode<'a>, ParseError> {
         self.expect_keyword(Keyword::Class, ptr)?;
-        let _ = self.expect(TokenKind::Identifier, ptr)?;
+        self.expect(TokenKind::Identifier, ptr)?;
         let class_name = if let TokenData::Identifier(name) = self.tokens[*ptr - 1].data {
             name
         } else {
@@ -438,6 +438,7 @@ impl<'a> Parser<'a> {
         }
 
         let ret_val = Some(self.parse_expression(terms, ptr)?);
+        self.expect_symbol(Symbol::Semicolon, ptr)?;
         Ok(Statement::Return(super::syntax::ReturnStmt { ret_val }))
     }
 
