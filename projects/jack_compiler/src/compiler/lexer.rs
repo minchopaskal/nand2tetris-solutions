@@ -1,39 +1,24 @@
-use std::{path::PathBuf, io::{BufReader, BufRead}, fs::File};
-
 use crate::compiler::tokens::Token;
 
-use super::tokens::{TokenKind, Keyword, Symbol};
+use super::tokens::{TokenData, Keyword, Symbol};
 
 pub(crate) struct Lexer {
     pub(crate) filename: String,
-    pub(crate) source: Vec<String>,
 }
 
 impl Lexer {
-    pub(crate) fn new(path: PathBuf) -> Lexer {
-        let filename = path.file_stem().unwrap().to_str().unwrap();
-
-        let mut source = Vec::new();
-
-        let in_file = File::open(&path).unwrap();
-        let reader = BufReader::new(in_file);
-        for line in reader.lines() {
-            let line = line.unwrap_or("".to_string());
-            source.push(line);
-        }
-
+    pub(crate) fn new(filename: String) -> Lexer {
         Lexer {
             filename: filename.to_string(),
-            source: source,
         }
     }
 
-    pub(crate) fn lex<'a>(&'a self) -> Vec<Token<'a>> {
+    pub(crate) fn lex<'a>(&'a self, source: &'a Vec<String>) -> Vec<Token<'a>> {
         let mut tokens = Vec::new();
 
         let mut lineno = 0;
         let mut in_comment = false;
-        for line in self.source.iter() {
+        for line in source.iter() {
             lineno += 1;
 
             let line = line.trim();
@@ -102,7 +87,7 @@ impl Lexer {
                     }
 
                     let token = Token {
-                        kind: TokenKind::String(&line[str_s..read]),
+                        data: TokenData::String(&line[str_s..read]),
                         file: &self.filename,
                         line: lineno,
                     };
@@ -113,58 +98,58 @@ impl Lexer {
                 }
 
                 let token = match toks[i] {
-                    "}" => TokenKind::Symbol(Symbol::RightCurly),
-                    "{" => TokenKind::Symbol(Symbol::LeftCurly),
-                    ")" => TokenKind::Symbol(Symbol::RightRound),
-                    "(" => TokenKind::Symbol(Symbol::LeftRound),
-                    "]" => TokenKind::Symbol(Symbol::RightSquare),
-                    "[" => TokenKind::Symbol(Symbol::LeftSquare),
-                    "." => TokenKind::Symbol(Symbol::Dot),
-                    "," => TokenKind::Symbol(Symbol::Comma),
-                    ";" => TokenKind::Symbol(Symbol::Semicolon),
-                    "+" => TokenKind::Symbol(Symbol::Plus),
-                    "-" => TokenKind::Symbol(Symbol::Minus),
-                    "*" => TokenKind::Symbol(Symbol::Multiply),
-                    "/" => TokenKind::Symbol(Symbol::Divide),
-                    "&" => TokenKind::Symbol(Symbol::And),
-                    "|" => TokenKind::Symbol(Symbol::Or),
-                    "=" => TokenKind::Symbol(Symbol::Equal),
-                    "~" => TokenKind::Symbol(Symbol::Not),
-                    "<" => TokenKind::Symbol(Symbol::Less),
-                    ">" => TokenKind::Symbol(Symbol::Greater),
-                    "class" => TokenKind::Keyword(Keyword::Class),
-                    "constructor" => TokenKind::Keyword(Keyword::Constructor),
-                    "function" => TokenKind::Keyword(Keyword::Function),
-                    "method" => TokenKind::Keyword(Keyword::Method),
-                    "field" => TokenKind::Keyword(Keyword::Field),
-                    "static" => TokenKind::Keyword(Keyword::Static),
-                    "var" => TokenKind::Keyword(Keyword::Var),
-                    "int" => TokenKind::Keyword(Keyword::Int),
-                    "char" => TokenKind::Keyword(Keyword::Char),
-                    "bool" => TokenKind::Keyword(Keyword::Boolean),
-                    "void" => TokenKind::Keyword(Keyword::Void),
-                    "true" => TokenKind::Keyword(Keyword::True),
-                    "false" => TokenKind::Keyword(Keyword::False),
-                    "null" => TokenKind::Keyword(Keyword::Null),
-                    "this" => TokenKind::Keyword(Keyword::This),
-                    "let" => TokenKind::Keyword(Keyword::Let),
-                    "do" => TokenKind::Keyword(Keyword::Do),
-                    "if" => TokenKind::Keyword(Keyword::If),
-                    "else" => TokenKind::Keyword(Keyword::Else),
-                    "while" => TokenKind::Keyword(Keyword::While),
-                    "return" => TokenKind::Keyword(Keyword::Return),
+                    "}" => TokenData::Symbol(Symbol::RightCurly),
+                    "{" => TokenData::Symbol(Symbol::LeftCurly),
+                    ")" => TokenData::Symbol(Symbol::RightRound),
+                    "(" => TokenData::Symbol(Symbol::LeftRound),
+                    "]" => TokenData::Symbol(Symbol::RightSquare),
+                    "[" => TokenData::Symbol(Symbol::LeftSquare),
+                    "." => TokenData::Symbol(Symbol::Dot),
+                    "," => TokenData::Symbol(Symbol::Comma),
+                    ";" => TokenData::Symbol(Symbol::Semicolon),
+                    "+" => TokenData::Symbol(Symbol::Plus),
+                    "-" => TokenData::Symbol(Symbol::Minus),
+                    "*" => TokenData::Symbol(Symbol::Multiply),
+                    "/" => TokenData::Symbol(Symbol::Divide),
+                    "&" => TokenData::Symbol(Symbol::And),
+                    "|" => TokenData::Symbol(Symbol::Or),
+                    "=" => TokenData::Symbol(Symbol::Equal),
+                    "~" => TokenData::Symbol(Symbol::Not),
+                    "<" => TokenData::Symbol(Symbol::Less),
+                    ">" => TokenData::Symbol(Symbol::Greater),
+                    "class" => TokenData::Keyword(Keyword::Class),
+                    "constructor" => TokenData::Keyword(Keyword::Constructor),
+                    "function" => TokenData::Keyword(Keyword::Function),
+                    "method" => TokenData::Keyword(Keyword::Method),
+                    "field" => TokenData::Keyword(Keyword::Field),
+                    "static" => TokenData::Keyword(Keyword::Static),
+                    "var" => TokenData::Keyword(Keyword::Var),
+                    "int" => TokenData::Keyword(Keyword::Int),
+                    "char" => TokenData::Keyword(Keyword::Char),
+                    "bool" => TokenData::Keyword(Keyword::Boolean),
+                    "void" => TokenData::Keyword(Keyword::Void),
+                    "true" => TokenData::Keyword(Keyword::True),
+                    "false" => TokenData::Keyword(Keyword::False),
+                    "null" => TokenData::Keyword(Keyword::Null),
+                    "this" => TokenData::Keyword(Keyword::This),
+                    "let" => TokenData::Keyword(Keyword::Let),
+                    "do" => TokenData::Keyword(Keyword::Do),
+                    "if" => TokenData::Keyword(Keyword::If),
+                    "else" => TokenData::Keyword(Keyword::Else),
+                    "while" => TokenData::Keyword(Keyword::While),
+                    "return" => TokenData::Keyword(Keyword::Return),
 
                     sym => {
                         if sym.parse::<i32>().is_ok() {
-                            TokenKind::Int(sym.parse::<i32>().unwrap())
+                            TokenData::Int(sym.parse::<i32>().unwrap())
                         } else {
-                            TokenKind::Identifier(sym)
+                            TokenData::Identifier(sym)
                         }
                     }
                 };
 
                 let token = Token {
-                    kind: token,
+                    data: token,
                     file: &self.filename,
                     line: lineno,
                 };

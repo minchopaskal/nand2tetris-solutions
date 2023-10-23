@@ -28,6 +28,6 @@ impl Analyzer for XMLAnalyzer {
     }
 
     fn analyze(&self, tree: &SyntaxTree) {
-
+        todo!()
     }
 }
