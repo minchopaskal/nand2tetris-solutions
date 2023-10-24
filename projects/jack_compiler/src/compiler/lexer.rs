@@ -1,6 +1,6 @@
 use crate::compiler::tokens::Token;
 
-use super::tokens::{TokenData, Keyword, Symbol};
+use super::tokens::{Keyword, Symbol, TokenData};
 
 pub(crate) struct Lexer {
     pub(crate) filename: String,
@@ -13,14 +13,11 @@ impl Lexer {
         }
     }
 
-    pub(crate) fn lex<'a>(&'a self, source: &'a Vec<String>) -> Vec<Token<'a>> {
+    pub(crate) fn lex<'a>(&'a self, source: &'a [String]) -> Vec<Token<'a>> {
         let mut tokens = Vec::new();
 
-        let mut lineno = 0;
         let mut in_comment = false;
-        for line in source.iter() {
-            lineno += 1;
-
+        for (lineno, line) in source.iter().enumerate() {
             let line = line.trim();
             if line.is_empty() || line.starts_with("//") {
                 continue;
@@ -44,12 +41,29 @@ impl Lexer {
             }
 
             let match_idx = line.match_indices(|c: char| {
-                match c {
-                    '{' | '}' | '(' | ')' | '[' | ']' | '.' | ',' |';' |
-                    '+' | '-' | '*' | '/' | '&' | '|' | '=' | '~' | '<' |
-                    '>' | ' ' | '"' => true,
-                    _ => false,
-                }
+                matches!(
+                    c,
+                    '{' | '}'
+                        | '('
+                        | ')'
+                        | '['
+                        | ']'
+                        | '.'
+                        | ','
+                        | ';'
+                        | '+'
+                        | '-'
+                        | '*'
+                        | '/'
+                        | '&'
+                        | '|'
+                        | '='
+                        | '~'
+                        | '<'
+                        | '>'
+                        | ' '
+                        | '"'
+                )
             });
 
             let mut toks = Vec::new();
@@ -126,7 +140,7 @@ impl Lexer {
                     "var" => TokenData::Keyword(Keyword::Var),
                     "int" => TokenData::Keyword(Keyword::Int),
                     "char" => TokenData::Keyword(Keyword::Char),
-                    "bool" => TokenData::Keyword(Keyword::Boolean),
+                    "boolean" => TokenData::Keyword(Keyword::Boolean),
                     "void" => TokenData::Keyword(Keyword::Void),
                     "true" => TokenData::Keyword(Keyword::True),
                     "false" => TokenData::Keyword(Keyword::False),

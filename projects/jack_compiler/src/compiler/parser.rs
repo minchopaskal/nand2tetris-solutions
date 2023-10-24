@@ -70,6 +70,7 @@ impl<'a> Parser<'a> {
         let root_node_res = self.parse_root(&mut terms, &mut ptr);
 
         let mut tree = SyntaxTree::new();
+        tree.filename = self.filename.clone();
         tree.root = if let Ok(node) = root_node_res {
             node
         } else {
@@ -493,7 +494,7 @@ impl<'a> Parser<'a> {
     fn is_op(&self, ptr: &mut usize) -> Result<bool, ParseError> {
         if *ptr >= self.tokens.len() {
             return Err(ParseError {
-                message: format!("Reading tokens after EOF!"),
+                message: "Reading tokens after EOF!".to_string(),
             });
         }
 
@@ -518,7 +519,7 @@ impl<'a> Parser<'a> {
     fn parse_op(&'a self, ptr: &mut usize) -> Result<Op, ParseError> {
         if *ptr >= self.tokens.len() {
             return Err(ParseError {
-                message: format!("Reading tokens after EOF!"),
+                message: "Reading tokens after EOF!".to_string(),
             });
         }
 
@@ -668,12 +669,12 @@ impl<'a> Parser<'a> {
         }
 
         let tok = &self.tokens[curr];
-        return Err(ParseError {
+        Err(ParseError {
             message: format!(
                 "Expected one of {:?}, got {:?} in {}:{}",
                 kinds, tk, tok.file, tok.line
             ),
-        });
+        })
     }
 
     fn expect_any_keyword(
@@ -703,12 +704,12 @@ impl<'a> Parser<'a> {
         }
 
         let tok = &self.tokens[curr];
-        return Err(ParseError {
+        Err(ParseError {
             message: format!(
                 "Expected any of {:?}, got {:?} in {}:{}",
                 kws, tok.data, tok.file, tok.line
             ),
-        });
+        })
     }
 
     fn expect_any_symbol(
@@ -738,12 +739,12 @@ impl<'a> Parser<'a> {
         }
 
         let tok = &self.tokens[curr];
-        return Err(ParseError {
+        Err(ParseError {
             message: format!(
                 "Expected any of {:?}, got {:?} in {}:{}",
                 symbols, tok.data, tok.file, tok.line
             ),
-        });
+        })
     }
 
     fn expect_keyword(&self, kw: Keyword, ptr: &mut usize) -> Result<(), ParseError> {
@@ -811,7 +812,7 @@ impl<'a> Parser<'a> {
     fn advance(&self, ptr: &mut usize) -> Result<(), ParseError> {
         if *ptr >= self.tokens.len() {
             return Err(ParseError {
-                message: format!("Advance tokens after EOF."),
+                message: "Advance tokens after EOF.".to_string(),
             });
         }
 
@@ -823,7 +824,7 @@ impl<'a> Parser<'a> {
     fn revert(&self, ptr: &mut usize) -> Result<(), ParseError> {
         if *ptr == 0 {
             return Err(ParseError {
-                message: format!("Revert first token"),
+                message: "Revert first token".to_string(),
             });
         }
 
@@ -835,7 +836,7 @@ impl<'a> Parser<'a> {
     fn peek(&self, ptr: &mut usize) -> Result<&TokenData<'a>, ParseError> {
         if *ptr >= self.tokens.len() {
             return Err(ParseError {
-                message: format!("Peek tokens after EOF."),
+                message: "Peek tokens after EOF.".to_string(),
             });
         }
 

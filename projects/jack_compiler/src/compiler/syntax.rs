@@ -1,12 +1,21 @@
-use super::tokens::{Identifier, Keyword, Symbol, TokenData};
+use super::tokens::{Identifier, Keyword, Symbol};
 
-type TermId = usize;
+pub(crate) type TermId = usize;
 
 // Program structure
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub(crate) enum ClassVarKind {
     Static,
     Field,
+}
+
+impl ToString for ClassVarKind {
+    fn to_string(&self) -> String {
+        match *self {
+            ClassVarKind::Static => "static".to_string(),
+            ClassVarKind::Field => "field".to_string(),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -14,6 +23,16 @@ pub(crate) enum SubroutineKind {
     Constructor,
     Function,
     Method,
+}
+
+impl ToString for SubroutineKind {
+    fn to_string(&self) -> String {
+        match *self {
+            SubroutineKind::Constructor => "constructor".to_string(),
+            SubroutineKind::Function => "function".to_string(),
+            SubroutineKind::Method => "method".to_string(),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -32,6 +51,15 @@ pub(crate) struct Param<'a> {
 pub(crate) enum SubroutineType<'a> {
     Void,
     Type(Type<'a>),
+}
+
+impl<'a> ToString for SubroutineType<'a> {
+    fn to_string(&self) -> String {
+        match *self {
+            SubroutineType::Void => "void".to_string(),
+            SubroutineType::Type(t) => t.to_string(),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -55,12 +83,23 @@ pub(crate) struct ClassVarDec<'a> {
     pub(crate) var_dec: VarDec<'a>,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub(crate) enum Type<'a> {
     Int,
     Char,
     Boolean,
     ClassName(Identifier<'a>),
+}
+
+impl<'a> ToString for Type<'a> {
+    fn to_string(&self) -> String {
+        match *self {
+            Type::Int => "int".to_string(),
+            Type::Char => "char".to_string(),
+            Type::Boolean => "boolean".to_string(),
+            Type::ClassName(s) => s.to_string(),
+        }
+    }
 }
 
 // Statements
@@ -118,6 +157,23 @@ pub(crate) enum Op {
     Equal,
 }
 
+impl ToString for Op {
+    fn to_string(&self) -> String {
+        match &self {
+            Op::Unknown => "unknown".to_string(),
+            Op::Plus => "+".to_string(),
+            Op::Minus => "-".to_string(),
+            Op::Multiply => "*".to_string(),
+            Op::Divide => "/".to_string(),
+            Op::And => "&amp;".to_string(),
+            Op::Or => "|".to_string(),
+            Op::Less => "&lt;".to_string(),
+            Op::Greater => "&gt;".to_string(),
+            Op::Equal => "=".to_string(),
+        }
+    }
+}
+
 impl From<Symbol> for Op {
     fn from(value: Symbol) -> Self {
         match value {
@@ -142,6 +198,16 @@ pub(crate) enum UnaryOp {
     Not,
 }
 
+impl ToString for UnaryOp {
+    fn to_string(&self) -> String {
+        match *self {
+            UnaryOp::Unknown => "unknown".to_string(),
+            UnaryOp::Minus => "-".to_string(),
+            UnaryOp::Not => "~".to_string(),
+        }
+    }
+}
+
 impl From<Symbol> for UnaryOp {
     fn from(value: Symbol) -> Self {
         match value {
@@ -159,6 +225,18 @@ pub(crate) enum KeywordConstant {
     False,
     Null,
     This,
+}
+
+impl ToString for KeywordConstant {
+    fn to_string(&self) -> String {
+        match *self {
+            KeywordConstant::Unknown => "unknown".to_string(),
+            KeywordConstant::False => "false".to_string(),
+            KeywordConstant::True => "true".to_string(),
+            KeywordConstant::Null => "null".to_string(),
+            KeywordConstant::This => "this".to_string(),
+        }
+    }
 }
 
 impl From<Keyword> for KeywordConstant {
@@ -219,6 +297,7 @@ pub(crate) struct ClassNode<'a> {
 
 #[derive(Debug)]
 pub struct SyntaxTree<'a> {
+    pub(crate) filename: String,
     pub(crate) terms: Vec<Term<'a>>,
     pub(crate) root: ClassNode<'a>,
 }
@@ -226,6 +305,7 @@ pub struct SyntaxTree<'a> {
 impl<'a> SyntaxTree<'a> {
     pub(crate) fn new() -> SyntaxTree<'a> {
         SyntaxTree {
+            filename: String::default(),
             terms: Vec::new(),
             root: Default::default(),
         }
