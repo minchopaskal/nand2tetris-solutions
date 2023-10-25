@@ -15,8 +15,10 @@ use xmlwriter::Options;
 macro_rules! write_element {
     ($w:ident,$type:expr,$val:expr) => {
         $w.start_element($type)?;
+        $w.set_preserve_whitespaces(true);
         $w.write_text($val)?;
         $w.end_element()?;
+        $w.set_preserve_whitespaces(false);
     };
 }
 
@@ -133,10 +135,10 @@ impl XMLAnalyzer {
                 write_element!(w, "identifier", fields[i].var_dec.name);
             }
 
-            write_element!(w, "symbol", ";");
-            w.end_element()?;
             i += 1;
         }
+        write_element!(w, "symbol", ";");
+        w.end_element()?;
 
         Ok(())
     }
@@ -174,7 +176,7 @@ impl XMLAnalyzer {
         params: &[Param],
         _terms: &[Term],
     ) -> io::Result<()> {
-        w.start_element("paramList")?;
+        w.start_element("parameterList")?;
 
         for i in 0..params.len() {
             let ptype = &params[i].p_type;
@@ -189,10 +191,6 @@ impl XMLAnalyzer {
             } else {
                 write_element!(w, "symbol", ";");
             }
-        }
-
-        if params.is_empty() {
-            w.set_preserve_whitespaces(true);
         }
         w.end_element()?;
 
@@ -347,7 +345,7 @@ impl XMLAnalyzer {
     }
 
     fn write_return(&self, w: &mut XmlWriter, r: &ReturnStmt, terms: &[Term]) -> io::Result<()> {
-        w.start_element("return")?;
+        w.start_element("returnStatement")?;
 
         write_element!(w, "keyword", "return");
         if let Some(expr) = &r.ret_val {
@@ -396,11 +394,7 @@ impl XMLAnalyzer {
             }
         }
 
-        if call.args.is_empty() {
-            w.set_preserve_whitespaces(true);
-        }
         w.end_element()?;
-        w.set_preserve_whitespaces(false);
         write_element!(w, "symbol", ")");
 
         Ok(())
@@ -420,7 +414,7 @@ impl XMLAnalyzer {
                 write_element!(w, "identifier", *v);
             }
             Term::KeywordConstant(k) => {
-                write_element!(w, "keywordConstant", &k.to_string());
+                write_element!(w, "keyword", &k.to_string());
             }
             Term::ArrayAccess(a) => {
                 write_element!(w, "identifier", a.var);
