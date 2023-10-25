@@ -165,10 +165,10 @@ impl ToString for Op {
             Op::Minus => "-".to_string(),
             Op::Multiply => "*".to_string(),
             Op::Divide => "/".to_string(),
-            Op::And => "&amp;".to_string(),
+            Op::And => "&".to_string(),
             Op::Or => "|".to_string(),
-            Op::Less => "&lt;".to_string(),
-            Op::Greater => "&gt;".to_string(),
+            Op::Less => "<".to_string(),
+            Op::Greater => ">".to_string(),
             Op::Equal => "=".to_string(),
         }
     }
@@ -311,3 +311,4 @@ impl<'a> SyntaxTree<'a> {
         }
     }
 }
+

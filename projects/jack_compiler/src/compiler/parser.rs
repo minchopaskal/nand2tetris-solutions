@@ -78,15 +78,6 @@ impl<'a> Parser<'a> {
         };
         tree.terms = terms;
 
-        println!("{:?}", tree.root);
-        println!(
-            "{:?}",
-            tree.terms
-                .iter()
-                .zip(0..tree.terms.len())
-                .collect::<Vec<(&Term<'a>, usize)>>()
-        );
-
         Ok(tree)
     }
 
@@ -844,3 +835,4 @@ impl<'a> Parser<'a> {
         Ok(&self.tokens[*ptr].data)
     }
 }
+
