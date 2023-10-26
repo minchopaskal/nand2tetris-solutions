@@ -9,8 +9,7 @@ use std::{
 
 use crate::compiler::{
     analyzer::Analyzer,
-    syntax::{ClassNode, SubroutineDec, SyntaxTree, Term},
-    tokens::Identifier,
+    syntax::{ClassNode, IdentifierId, SubroutineDec, SubroutineKind, SyntaxTree, Term, Type},
 };
 
 type Label = String;
@@ -130,10 +129,21 @@ impl Error for VMGeneratorError {}
 
 pub type VMGeneratorResult = Result<(), VMGeneratorError>;
 
+struct SymbolData<'a> {
+    stype: &'a Type,
+    kind: Segment,
+}
+
+impl<'a> SymbolData<'a> {
+    fn new(stype: &'a Type, kind: Segment) -> Self {
+        SymbolData { stype, kind }
+    }
+}
+
 struct GenData<'a> {
-    global: HashMap<Identifier<'a>, i32>,
-    local: HashMap<Identifier<'a>, i32>,
-    terms: &'a Vec<Term<'a>>,
+    global: HashMap<IdentifierId, SymbolData<'a>>,
+    local: HashMap<IdentifierId, SymbolData<'a>>,
+    terms: &'a Vec<Term>,
     w: VMWriter,
 }
 
@@ -172,14 +182,8 @@ impl VMGenerator {
         }
     }
 
-    fn generate_class<'a>(
-        &self,
-        root: &ClassNode<'a>,
-        data: &mut GenData<'a>,
-    ) -> VMGeneratorResult {
-        for (i, var) in root.fields.iter().enumerate() {
-            data.global.insert(var.var_dec.name, i as i32);
-        }
+    fn generate_class(&self, root: &ClassNode, data: &mut GenData<'_>) -> VMGeneratorResult {
+        for (_i, _var) in root.fields.iter().enumerate() {}
 
         self.gen_subroutines(&root.subroutines, data)?;
 
@@ -191,6 +195,15 @@ impl VMGenerator {
         subroutines: &[SubroutineDec],
         data: &mut GenData,
     ) -> VMGeneratorResult {
-        todo!()
+        for sd in subroutines {
+            data.local.clear();
+            match sd.kind {
+                SubroutineKind::Constructor => todo!(),
+                SubroutineKind::Function => todo!(),
+                SubroutineKind::Method => todo!(),
+            }
+        }
+
+        Ok(())
     }
 }
