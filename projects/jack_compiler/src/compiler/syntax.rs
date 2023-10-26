@@ -1,4 +1,4 @@
-use super::tokens::{Keyword, Symbol, Token};
+use super::tokens::{Keyword, Symbol, Token, TokenData};
 
 pub(crate) type TermId = usize;
 pub(crate) type IdentifierId = usize;
@@ -192,7 +192,7 @@ impl From<Symbol> for Op {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub(crate) enum UnaryOp {
     Unknown,
     Minus,
@@ -307,5 +307,28 @@ pub struct SyntaxTree<'a> {
 impl<'a> SyntaxTree<'a> {
     pub(crate) fn new() -> SyntaxTree<'a> {
         Default::default()
+    }
+
+    pub(crate) fn get_this() -> &'a str {
+        "this"
+    }
+
+    pub(crate) fn get_type(&self) -> Type {
+        Type::ClassName(self.root.name)
+    }
+
+    pub(crate) fn get_id(&self, id: IdentifierId) -> &str {
+        if id == usize::MAX {
+            return "this";
+        }
+
+        match self.tokens[id].data {
+            TokenData::String(s) => s,
+            TokenData::Identifier(s) => s,
+            _ => panic!(
+                "Internal error: expected string/identifier for token {} in {}",
+                id, self.filename
+            ),
+        }
     }
 }

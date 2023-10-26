@@ -86,13 +86,13 @@ impl Parser {
         tree.terms = d.terms;
         tree.tokens = d.tokens;
 
-        println!("{:?}", tree.root);
-        for (i, term) in tree.terms.iter().enumerate() {
-            println!("{i} - {term:?}");
-        }
-        for (i, tok) in tree.tokens.iter().enumerate() {
-            println!("{i} - {tok:?}");
-        }
+        // println!("{:?}", tree.root);
+        // for (i, term) in tree.terms.iter().enumerate() {
+        //     println!("{i} - {term:?}");
+        // }
+        // for (i, tok) in tree.tokens.iter().enumerate() {
+        //     println!("{i} - {tok:?}");
+        // }
 
         Ok(tree)
     }

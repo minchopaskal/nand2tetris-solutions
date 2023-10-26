@@ -11,7 +11,6 @@ use crate::compiler::{
         SubroutineBody, SubroutineCall, SubroutineDec, SubroutineType, SyntaxTree, Term, TermId,
         Type, VarDec, WhileStmt,
     },
-    tokens::TokenData,
 };
 use xmlwriter::Options;
 
@@ -29,14 +28,7 @@ macro_rules! write_element {
 #[macro_export]
 macro_rules! write_id_elem {
     ($d:ident,$type:expr,$val:expr) => {
-        let s = match $d.tree.tokens[$val].data {
-            TokenData::String(s) => s.to_string(),
-            TokenData::Identifier(s) => s.to_string(),
-            _ => panic!(
-                "Internal error: Invalid token at index {} in file {}",
-                $val, $d.tree.filename
-            ),
-        };
+        let s = $d.tree.get_id($val);
         $d.w.start_element($type)?;
         $d.w.set_preserve_whitespaces(true);
         $d.w.write_text(&s)?;
