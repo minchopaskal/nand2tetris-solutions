@@ -342,6 +342,9 @@ impl VMGenerator {
 
         self.prep_function(sd, data, 1)?;
 
+        data.w.push(Segment::Argument(0))?;
+        data.w.pop(Segment::Pointer(0))?;
+
         Ok(())
     }
 
@@ -514,7 +517,7 @@ impl VMGenerator {
                     }))
                 }
                 KeywordConstant::True => {
-                    data.w.push(Segment::Constant(1))?;
+                    data.w.push(Segment::Constant(0))?;
                     data.w.arith(Op::Not)?;
                 }
                 KeywordConstant::False => {
