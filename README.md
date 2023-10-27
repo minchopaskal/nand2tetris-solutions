@@ -9,5 +9,4 @@ Solutions to Coursera's Nand2Tetris Course.
 
 ## TODO:
 
-* Project 11 - Code Generation
 * Project 12 - System Functions
