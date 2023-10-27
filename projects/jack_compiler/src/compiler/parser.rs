@@ -6,11 +6,11 @@ use std::path::PathBuf;
 
 use super::lexer::Lexer;
 use super::syntax::{
-    ArrayAccess, ClassNode, ClassVarDec, ClassVarKind, Expression, KeywordConstant, Op, Param,
-    Statement, SubroutineBody, SubroutineCall, SubroutineDec, SubroutineKind, SubroutineType,
-    SyntaxTree, Term, Type, UnaryTerm, VarDec,
+    ArrayAccess, ClassNode, ClassVarDec, ClassVarKind, Expression, IdentifierId, KeywordConstant,
+    Op, Param, Statement, SubroutineBody, SubroutineCall, SubroutineDec, SubroutineKind,
+    SubroutineType, SyntaxTree, Term, Type, UnaryTerm, VarDec,
 };
-use super::tokens::{Identifier, Keyword, Symbol, Token, TokenData, TokenKind};
+use super::tokens::{Keyword, Symbol, Token, TokenData, TokenKind};
 
 #[macro_export]
 macro_rules! return_internal {
@@ -34,16 +34,22 @@ impl Display for ParseError {
 
 impl Error for ParseError {}
 
-pub struct Parser<'a> {
+struct ParserData<'a> {
+    tokens: Vec<Token<'a>>,
+    terms: Vec<Term>,
+    ptr: usize,
+}
+
+pub struct Parser {
     pub filename: String,
 
     source: Vec<String>,
     lexer: Lexer,
-    tokens: Vec<Token<'a>>,
+    //tokens: Vec<Token>,
 }
 
-impl<'a> Parser<'a> {
-    pub fn new(path: PathBuf) -> Parser<'a> {
+impl Parser {
+    pub fn new(path: PathBuf) -> Parser {
         let filename = path.file_stem().unwrap().to_str().unwrap();
 
         let mut source = Vec::new();
@@ -58,16 +64,17 @@ impl<'a> Parser<'a> {
             filename: filename.to_string(),
             source,
             lexer: Lexer::new(filename.to_string()),
-            tokens: Default::default(),
+            //tokens: Default::default(),
         }
     }
 
-    pub fn parse(&'a mut self) -> Result<SyntaxTree<'a>, ParseError> {
-        self.tokens = self.lexer.lex(&self.source);
-
-        let mut terms = Vec::new();
-        let mut ptr = 0;
-        let root_node_res = self.parse_root(&mut terms, &mut ptr);
+    pub fn parse(&mut self) -> Result<SyntaxTree, ParseError> {
+        let mut d = ParserData {
+            tokens: self.lexer.lex(&self.source),
+            terms: Vec::new(),
+            ptr: 0,
+        };
+        let root_node_res = self.parse_root(&mut d);
 
         let mut tree = SyntaxTree::new();
         tree.filename = self.filename.clone();
@@ -76,27 +83,32 @@ impl<'a> Parser<'a> {
         } else {
             return Err(root_node_res.err().unwrap());
         };
-        tree.terms = terms;
+        tree.terms = d.terms;
+        tree.tokens = d.tokens;
+
+        // println!("{:?}", tree.root);
+        // for (i, term) in tree.terms.iter().enumerate() {
+        //     println!("{i} - {term:?}");
+        // }
+        // for (i, tok) in tree.tokens.iter().enumerate() {
+        //     println!("{i} - {tok:?}");
+        // }
 
         Ok(tree)
     }
 
-    fn parse_root(
-        &'a self,
-        terms: &mut Vec<Term<'a>>,
-        ptr: &mut usize,
-    ) -> Result<ClassNode<'a>, ParseError> {
-        self.expect_keyword(Keyword::Class, ptr)?;
-        self.expect(TokenKind::Identifier, ptr)?;
-        let class_name = if let TokenData::Identifier(name) = self.tokens[*ptr - 1].data {
-            name
+    fn parse_root(&self, d: &mut ParserData) -> Result<ClassNode, ParseError> {
+        self.expect_keyword(Keyword::Class, d)?;
+        self.expect(TokenKind::Identifier, d)?;
+        let class_name = if let TokenData::Identifier(_name) = d.tokens[d.ptr - 1].data {
+            d.ptr - 1
         } else {
             panic!("Expected class name identifier!");
         };
-        self.expect_symbol(Symbol::LeftCurly, ptr)?;
+        self.expect_symbol(Symbol::LeftCurly, d)?;
 
-        let var_dec = self.parse_classvardec(ptr)?;
-        let subroutine_dec = self.parse_subroutinedec(terms, ptr)?;
+        let var_dec = self.parse_classvardec(d)?;
+        let subroutine_dec = self.parse_subroutinedec(d)?;
 
         Ok(ClassNode {
             name: class_name,
@@ -105,11 +117,11 @@ impl<'a> Parser<'a> {
         })
     }
 
-    fn parse_type(&'a self, ptr: &mut usize) -> Result<Type<'a>, ParseError> {
-        self.expect_any(vec![TokenKind::Identifier, TokenKind::Keyword], ptr)?;
-        let curr_tok = &self.tokens[*ptr - 1];
+    fn parse_type(&self, d: &mut ParserData) -> Result<Type, ParseError> {
+        self.expect_any(vec![TokenKind::Identifier, TokenKind::Keyword], d)?;
+        let curr_tok = &d.tokens[d.ptr - 1];
         let var_type = match curr_tok.data {
-            TokenData::Identifier(id) => Type::ClassName(id),
+            TokenData::Identifier(_id) => Type::ClassName(d.ptr - 1),
             TokenData::Keyword(kw) => match kw {
                 Keyword::Boolean => Type::Boolean,
                 Keyword::Char => Type::Char,
@@ -131,30 +143,30 @@ impl<'a> Parser<'a> {
         Ok(var_type)
     }
 
-    fn parse_vardec(&'a self, ptr: &mut usize) -> Result<Vec<VarDec<'a>>, ParseError> {
+    fn parse_vardec(&self, d: &mut ParserData) -> Result<Vec<VarDec>, ParseError> {
         let mut res = Vec::new();
 
-        let var_type = self.parse_type(ptr)?;
+        let var_type = self.parse_type(d)?;
         loop {
-            let name = self.parse_name(ptr)?;
+            let name = self.parse_name(d)?;
 
             res.push(VarDec { var_type, name });
 
-            if let TokenData::Symbol(Symbol::Semicolon) = self.peek(ptr)? {
+            if let TokenData::Symbol(Symbol::Semicolon) = d.tokens[d.ptr].data {
                 break;
             }
-            self.expect_symbol(Symbol::Comma, ptr)?;
+            self.expect_symbol(Symbol::Comma, d)?;
         }
 
-        self.expect_symbol(Symbol::Semicolon, ptr)?;
+        self.expect_symbol(Symbol::Semicolon, d)?;
 
         Ok(res)
     }
 
-    fn parse_classvardec(&'a self, ptr: &mut usize) -> Result<Vec<ClassVarDec<'a>>, ParseError> {
+    fn parse_classvardec(&self, d: &mut ParserData) -> Result<Vec<ClassVarDec>, ParseError> {
         let mut res = Vec::new();
 
-        let mut tok = self.peek(ptr)?;
+        let mut tok = &d.tokens[d.ptr].data;
         if let TokenData::Symbol(Symbol::RightCurly) = tok {
             return Ok(res);
         }
@@ -171,8 +183,8 @@ impl<'a> Parser<'a> {
                 _ => (),
             }
 
-            let kind_tok = self.expect_any_keyword(vec![Keyword::Field, Keyword::Static], ptr)?;
-            let curr_tok = &self.tokens[*ptr - 1];
+            let kind_tok = self.expect_any_keyword(vec![Keyword::Field, Keyword::Static], d)?;
+            let curr_tok = &d.tokens[d.ptr - 1];
             let kind = match kind_tok {
                 Keyword::Field => ClassVarKind::Field,
                 Keyword::Static => ClassVarKind::Static,
@@ -185,24 +197,20 @@ impl<'a> Parser<'a> {
                     });
                 }
             };
-            let var_decs = self.parse_vardec(ptr)?;
+            let var_decs = self.parse_vardec(d)?;
             for var_dec in var_decs {
                 res.push(ClassVarDec { kind, var_dec });
             }
-            tok = self.peek(ptr)?;
+            tok = &d.tokens[d.ptr].data;
         }
 
         Ok(res)
     }
 
-    fn parse_subroutinedec(
-        &'a self,
-        terms: &mut Vec<Term<'a>>,
-        ptr: &mut usize,
-    ) -> Result<Vec<SubroutineDec<'a>>, ParseError> {
+    fn parse_subroutinedec(&self, d: &mut ParserData) -> Result<Vec<SubroutineDec>, ParseError> {
         let mut res = Vec::new();
 
-        let mut tok = self.peek(ptr)?;
+        let mut tok = &d.tokens[d.ptr].data;
         loop {
             if let TokenData::Symbol(Symbol::RightCurly) = tok {
                 break;
@@ -210,7 +218,7 @@ impl<'a> Parser<'a> {
 
             let func_kind = self.expect_any_keyword(
                 vec![Keyword::Constructor, Keyword::Function, Keyword::Method],
-                ptr,
+                d,
             )?;
             let kind = match func_kind {
                 Keyword::Constructor => SubroutineKind::Constructor,
@@ -222,22 +230,22 @@ impl<'a> Parser<'a> {
             };
 
             let f_type = {
-                if let Ok(t) = self.parse_type(ptr) {
+                if let Ok(t) = self.parse_type(d) {
                     SubroutineType::Type(t)
                 } else {
-                    self.revert(ptr)?;
-                    self.expect_keyword(Keyword::Void, ptr)?;
+                    self.revert(d)?;
+                    self.expect_keyword(Keyword::Void, d)?;
                     SubroutineType::Void
                 }
             };
 
-            let name = self.parse_name(ptr)?;
+            let name = self.parse_name(d)?;
 
-            self.expect_symbol(Symbol::LeftRound, ptr)?;
-            let params = self.parse_parameter_list(ptr)?;
-            self.expect_symbol(Symbol::RightRound, ptr)?;
+            self.expect_symbol(Symbol::LeftRound, d)?;
+            let params = self.parse_parameter_list(d)?;
+            self.expect_symbol(Symbol::RightRound, d)?;
 
-            let body = self.parse_subroutine_body(terms, ptr)?;
+            let body = self.parse_subroutine_body(d)?;
 
             res.push(SubroutineDec {
                 kind,
@@ -247,27 +255,27 @@ impl<'a> Parser<'a> {
                 body,
             });
 
-            tok = self.peek(ptr)?;
+            tok = &d.tokens[d.ptr].data;
         }
 
         Ok(res)
     }
 
-    fn parse_parameter_list(&'a self, ptr: &mut usize) -> Result<Vec<Param<'a>>, ParseError> {
+    fn parse_parameter_list(&self, d: &mut ParserData) -> Result<Vec<Param>, ParseError> {
         let mut res = Vec::new();
 
-        if let TokenData::Symbol(Symbol::RightRound) = self.peek(ptr)? {
+        if let TokenData::Symbol(Symbol::RightRound) = d.tokens[d.ptr].data {
             return Ok(res);
         }
 
         loop {
-            let p_type = self.parse_type(ptr)?;
-            let name = self.parse_name(ptr)?;
+            let p_type = self.parse_type(d)?;
+            let name = self.parse_name(d)?;
 
             res.push(Param { p_type, name });
 
-            if let TokenData::Symbol(Symbol::Comma) = self.tokens[*ptr].data {
-                self.advance(ptr)?;
+            if let TokenData::Symbol(Symbol::Comma) = d.tokens[d.ptr].data {
+                self.advance(d)?;
                 continue;
             }
 
@@ -277,29 +285,25 @@ impl<'a> Parser<'a> {
         Ok(res)
     }
 
-    fn parse_statements(
-        &'a self,
-        terms: &mut Vec<Term<'a>>,
-        ptr: &mut usize,
-    ) -> Result<Vec<Statement<'a>>, ParseError> {
+    fn parse_statements(&self, d: &mut ParserData) -> Result<Vec<Statement>, ParseError> {
         let mut stmts = Vec::new();
 
-        while let TokenData::Keyword(kw) = self.peek(ptr)? {
+        while let TokenData::Keyword(kw) = &d.tokens[d.ptr].data {
             match *kw {
                 Keyword::Let => {
-                    stmts.push(self.parse_let(terms, ptr)?);
+                    stmts.push(self.parse_let(d)?);
                 }
                 Keyword::If => {
-                    stmts.push(self.parse_if(terms, ptr)?);
+                    stmts.push(self.parse_if(d)?);
                 }
                 Keyword::While => {
-                    stmts.push(self.parse_while(terms, ptr)?);
+                    stmts.push(self.parse_while(d)?);
                 }
                 Keyword::Do => {
-                    stmts.push(self.parse_do(terms, ptr)?);
+                    stmts.push(self.parse_do(d)?);
                 }
                 Keyword::Return => {
-                    stmts.push(self.parse_return(terms, ptr)?);
+                    stmts.push(self.parse_return(d)?);
                 }
                 _ => {
                     break;
@@ -310,71 +314,59 @@ impl<'a> Parser<'a> {
         Ok(stmts)
     }
 
-    fn parse_subroutine_body(
-        &'a self,
-        terms: &mut Vec<Term<'a>>,
-        ptr: &mut usize,
-    ) -> Result<SubroutineBody<'a>, ParseError> {
-        self.expect_symbol(Symbol::LeftCurly, ptr)?;
+    fn parse_subroutine_body(&self, d: &mut ParserData) -> Result<SubroutineBody, ParseError> {
+        self.expect_symbol(Symbol::LeftCurly, d)?;
 
         let mut var_decs = Vec::new();
-        while let TokenData::Keyword(Keyword::Var) = self.peek(ptr)? {
-            self.advance(ptr)?;
-            let mut vars = self.parse_vardec(ptr)?;
+        while let TokenData::Keyword(Keyword::Var) = d.tokens[d.ptr].data {
+            self.advance(d)?;
+            let mut vars = self.parse_vardec(d)?;
             var_decs.append(&mut vars);
         }
 
-        let stmts = self.parse_statements(terms, ptr)?;
+        let stmts = self.parse_statements(d)?;
 
-        self.expect_symbol(Symbol::RightCurly, ptr)?;
+        self.expect_symbol(Symbol::RightCurly, d)?;
         Ok(SubroutineBody { var_decs, stmts })
     }
 
-    fn parse_let(
-        &'a self,
-        terms: &mut Vec<Term<'a>>,
-        ptr: &mut usize,
-    ) -> Result<Statement<'a>, ParseError> {
-        self.expect_keyword(Keyword::Let, ptr)?;
-        let name = self.parse_name(ptr)?;
+    fn parse_let(&self, d: &mut ParserData) -> Result<Statement, ParseError> {
+        self.expect_keyword(Keyword::Let, d)?;
+        let name = self.parse_name(d)?;
 
-        let idx = if self.tokens[*ptr].data == TokenData::Symbol(Symbol::LeftSquare) {
-            self.advance(ptr)?;
-            let expr = self.parse_expression(terms, ptr)?;
-            self.expect_symbol(Symbol::RightSquare, ptr)?;
+        let idx = if d.tokens[d.ptr].data == TokenData::Symbol(Symbol::LeftSquare) {
+            self.advance(d)?;
+            let expr = self.parse_expression(d)?;
+            self.expect_symbol(Symbol::RightSquare, d)?;
 
             Some(expr)
         } else {
             None
         };
 
-        self.expect_symbol(Symbol::Equal, ptr)?;
+        self.expect_symbol(Symbol::Equal, d)?;
 
-        let eq_to = self.parse_expression(terms, ptr)?;
+        let eq_to = self.parse_expression(d)?;
 
-        self.expect_symbol(Symbol::Semicolon, ptr)?;
+        self.expect_symbol(Symbol::Semicolon, d)?;
 
         Ok(Statement::Let(super::syntax::LetStmt { name, idx, eq_to }))
     }
 
-    fn parse_if(
-        &'a self,
-        terms: &mut Vec<Term<'a>>,
-        ptr: &mut usize,
-    ) -> Result<Statement<'a>, ParseError> {
-        self.expect_keyword(Keyword::If, ptr)?;
-        self.expect_symbol(Symbol::LeftRound, ptr)?;
-        let cond = self.parse_expression(terms, ptr)?;
-        self.expect_symbol(Symbol::RightRound, ptr)?;
-        self.expect_symbol(Symbol::LeftCurly, ptr)?;
-        let body = self.parse_statements(terms, ptr)?;
-        self.expect_symbol(Symbol::RightCurly, ptr)?;
+    fn parse_if(&self, d: &mut ParserData) -> Result<Statement, ParseError> {
+        self.expect_keyword(Keyword::If, d)?;
+        self.expect_symbol(Symbol::LeftRound, d)?;
+        let cond = self.parse_expression(d)?;
+        self.expect_symbol(Symbol::RightRound, d)?;
+        self.expect_symbol(Symbol::LeftCurly, d)?;
+        let body = self.parse_statements(d)?;
+        self.expect_symbol(Symbol::RightCurly, d)?;
 
-        let else_body = if let TokenData::Keyword(Keyword::Else) = self.tokens[*ptr].data {
-            self.advance(ptr)?;
-            self.expect_symbol(Symbol::LeftCurly, ptr)?;
-            let stmts = self.parse_statements(terms, ptr)?;
-            self.expect_symbol(Symbol::RightCurly, ptr)?;
+        let else_body = if let TokenData::Keyword(Keyword::Else) = d.tokens[d.ptr].data {
+            self.advance(d)?;
+            self.expect_symbol(Symbol::LeftCurly, d)?;
+            let stmts = self.parse_statements(d)?;
+            self.expect_symbol(Symbol::RightCurly, d)?;
 
             stmts
         } else {
@@ -388,108 +380,88 @@ impl<'a> Parser<'a> {
         }))
     }
 
-    fn parse_while(
-        &'a self,
-        terms: &mut Vec<Term<'a>>,
-        ptr: &mut usize,
-    ) -> Result<Statement<'a>, ParseError> {
-        self.expect_keyword(Keyword::While, ptr)?;
-        self.expect_symbol(Symbol::LeftRound, ptr)?;
-        let cond = self.parse_expression(terms, ptr)?;
-        self.expect_symbol(Symbol::RightRound, ptr)?;
-        self.expect_symbol(Symbol::LeftCurly, ptr)?;
-        let body = self.parse_statements(terms, ptr)?;
-        self.expect_symbol(Symbol::RightCurly, ptr)?;
+    fn parse_while(&self, d: &mut ParserData) -> Result<Statement, ParseError> {
+        self.expect_keyword(Keyword::While, d)?;
+        self.expect_symbol(Symbol::LeftRound, d)?;
+        let cond = self.parse_expression(d)?;
+        self.expect_symbol(Symbol::RightRound, d)?;
+        self.expect_symbol(Symbol::LeftCurly, d)?;
+        let body = self.parse_statements(d)?;
+        self.expect_symbol(Symbol::RightCurly, d)?;
 
         Ok(Statement::While(super::syntax::WhileStmt { cond, body }))
     }
 
-    fn parse_do(
-        &'a self,
-        terms: &mut Vec<Term<'a>>,
-        ptr: &mut usize,
-    ) -> Result<Statement<'a>, ParseError> {
-        self.expect_keyword(Keyword::Do, ptr)?;
-        let call = self.parse_subroutine_call(terms, ptr)?;
-        self.expect_symbol(Symbol::Semicolon, ptr)?;
+    fn parse_do(&self, d: &mut ParserData) -> Result<Statement, ParseError> {
+        self.expect_keyword(Keyword::Do, d)?;
+        let call = self.parse_subroutine_call(d)?;
+        self.expect_symbol(Symbol::Semicolon, d)?;
 
         Ok(Statement::Do(super::syntax::DoStmt { call }))
     }
 
-    fn parse_return(
-        &'a self,
-        terms: &mut Vec<Term<'a>>,
-        ptr: &mut usize,
-    ) -> Result<Statement<'a>, ParseError> {
-        self.expect_keyword(Keyword::Return, ptr)?;
-        if let TokenData::Symbol(Symbol::Semicolon) = self.tokens[*ptr].data {
-            self.advance(ptr)?;
+    fn parse_return(&self, d: &mut ParserData) -> Result<Statement, ParseError> {
+        self.expect_keyword(Keyword::Return, d)?;
+        if let TokenData::Symbol(Symbol::Semicolon) = d.tokens[d.ptr].data {
+            self.advance(d)?;
             return Ok(Statement::Return(super::syntax::ReturnStmt {
                 ret_val: None,
             }));
         }
 
-        let ret_val = Some(self.parse_expression(terms, ptr)?);
-        self.expect_symbol(Symbol::Semicolon, ptr)?;
+        let ret_val = Some(self.parse_expression(d)?);
+        self.expect_symbol(Symbol::Semicolon, d)?;
         Ok(Statement::Return(super::syntax::ReturnStmt { ret_val }))
     }
 
-    fn parse_subroutine_call(
-        &'a self,
-        terms: &mut Vec<Term<'a>>,
-        ptr: &mut usize,
-    ) -> Result<SubroutineCall<'a>, ParseError> {
-        let name = self.parse_name(ptr)?;
-        let (name, caller) = if let TokenData::Symbol(Symbol::Dot) = self.tokens[*ptr].data {
-            self.advance(ptr)?;
-            let n = self.parse_name(ptr)?;
+    fn parse_subroutine_call(&self, d: &mut ParserData) -> Result<SubroutineCall, ParseError> {
+        let name = self.parse_name(d)?;
+        let (name, caller) = if let TokenData::Symbol(Symbol::Dot) = d.tokens[d.ptr].data {
+            self.advance(d)?;
+            let n = self.parse_name(d)?;
             (n, Some(name))
         } else {
             (name, None)
         };
-        self.expect_symbol(Symbol::LeftRound, ptr)?;
+        self.expect_symbol(Symbol::LeftRound, d)?;
 
         let mut args = Vec::new();
-        if let TokenData::Symbol(Symbol::RightRound) = self.tokens[*ptr].data {
-            self.advance(ptr)?;
+        if let TokenData::Symbol(Symbol::RightRound) = d.tokens[d.ptr].data {
+            self.advance(d)?;
             return Ok(SubroutineCall { caller, name, args });
         }
         loop {
-            args.push(self.parse_expression(terms, ptr)?);
-            if let TokenData::Symbol(Symbol::RightRound) = self.tokens[*ptr].data {
+            args.push(self.parse_expression(d)?);
+            if let TokenData::Symbol(Symbol::RightRound) = d.tokens[d.ptr].data {
                 break;
             }
-            self.expect_symbol(Symbol::Comma, ptr)?;
+            self.expect_symbol(Symbol::Comma, d)?;
         }
-        self.expect_symbol(Symbol::RightRound, ptr)?;
+        self.expect_symbol(Symbol::RightRound, d)?;
 
         Ok(SubroutineCall { caller, name, args })
     }
 
-    fn parse_expression(
-        &'a self,
-        terms: &mut Vec<Term<'a>>,
-        ptr: &mut usize,
-    ) -> Result<Expression, ParseError> {
-        let init_term = self.parse_term(terms, ptr)?;
+    fn parse_expression(&self, d: &mut ParserData) -> Result<Expression, ParseError> {
+        let init_term = self.parse_term(d)?;
 
         let mut ops = Vec::new();
-        while self.is_op(ptr)? {
-            let op = self.parse_op(ptr)?;
-            ops.push((op, self.parse_term(terms, ptr)?));
+        while self.is_op(d)? {
+            let op = self.parse_op(d)?;
+            ops.push((op, self.parse_term(d)?));
         }
 
         Ok(Expression { init_term, ops })
     }
 
-    fn is_op(&self, ptr: &mut usize) -> Result<bool, ParseError> {
-        if *ptr >= self.tokens.len() {
+    fn is_op(&self, d: &mut ParserData) -> Result<bool, ParseError> {
+        if d.ptr >= d.tokens.len() {
             return Err(ParseError {
                 message: "Reading tokens after EOF!".to_string(),
             });
         }
 
-        if let TokenData::Symbol(s) = self.tokens[*ptr].data {
+        if let TokenData::Symbol(s) = d.tokens[d.ptr].data {
             match s {
                 Symbol::Plus
                 | Symbol::Minus
@@ -507,17 +479,17 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_op(&'a self, ptr: &mut usize) -> Result<Op, ParseError> {
-        if *ptr >= self.tokens.len() {
+    fn parse_op(&self, d: &mut ParserData) -> Result<Op, ParseError> {
+        if d.ptr >= d.tokens.len() {
             return Err(ParseError {
                 message: "Reading tokens after EOF!".to_string(),
             });
         }
 
-        let curr = *ptr;
-        *ptr += 1;
+        let curr = d.ptr;
+        d.ptr += 1;
 
-        if let TokenData::Symbol(s) = self.tokens[curr].data {
+        if let TokenData::Symbol(s) = d.tokens[curr].data {
             let op = s.into();
             match op {
                 Op::Unknown => return_internal!(),
@@ -528,13 +500,9 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_term(
-        &'a self,
-        terms: &mut Vec<Term<'a>>,
-        ptr: &mut usize,
-    ) -> Result<usize, ParseError> {
-        self.advance(ptr)?;
-        let curr_token = &self.tokens[*ptr - 1];
+    fn parse_term(&self, d: &mut ParserData) -> Result<usize, ParseError> {
+        self.advance(d)?;
+        let curr_token = &d.tokens[d.ptr - 1];
         match curr_token.data {
             TokenData::Keyword(kw) => {
                 if let KeywordConstant::Unknown = kw.into() {
@@ -545,20 +513,20 @@ impl<'a> Parser<'a> {
                         ),
                     });
                 } else {
-                    terms.push(Term::KeywordConstant(kw.into()));
+                    d.terms.push(Term::KeywordConstant(kw.into()));
                 }
             }
             TokenData::Symbol(s) => {
                 match s {
                     Symbol::Minus | Symbol::Not => {
                         let op = s.into();
-                        let term = self.parse_term(terms, ptr)?;
-                        terms.push(Term::Unary(UnaryTerm { op, term }));
+                        let term = self.parse_term(d)?;
+                        d.terms.push(Term::Unary(UnaryTerm { op, term }));
                     }
                     Symbol::LeftRound => {
-                        let expr = self.parse_expression(terms, ptr)?;
-                        self.expect_symbol(Symbol::RightRound, ptr)?;
-                        terms.push(Term::BracketExpression(expr));
+                        let expr = self.parse_expression(d)?;
+                        self.expect_symbol(Symbol::RightRound, d)?;
+                        d.terms.push(Term::BracketExpression(expr));
                     }
                     _ => {
                         return Err(ParseError {
@@ -571,68 +539,69 @@ impl<'a> Parser<'a> {
                 };
             }
             TokenData::Int(i) => {
-                terms.push(Term::Int(i));
+                d.terms.push(Term::Int(i));
             }
-            TokenData::String(s) => {
-                terms.push(Term::String(s));
+            TokenData::String(_s) => {
+                d.terms.push(Term::String(d.ptr - 1));
             }
-            TokenData::Identifier(id) => {
-                if let Ok(s) = self.expect_any_symbol(
-                    vec![Symbol::LeftSquare, Symbol::LeftRound, Symbol::Dot],
-                    ptr,
-                ) {
+            TokenData::Identifier(_id) => {
+                let id = d.ptr - 1;
+                if let Ok(s) = self
+                    .expect_any_symbol(vec![Symbol::LeftSquare, Symbol::LeftRound, Symbol::Dot], d)
+                {
                     match s {
                         Symbol::LeftSquare => {
-                            let expr = self.parse_expression(terms, ptr)?;
-                            self.expect_symbol(Symbol::RightSquare, ptr)?;
-                            terms.push(Term::ArrayAccess(ArrayAccess { var: id, idx: expr }));
+                            let expr = self.parse_expression(d)?;
+                            self.expect_symbol(Symbol::RightSquare, d)?;
+                            d.terms
+                                .push(Term::ArrayAccess(ArrayAccess { var: id, idx: expr }));
                         }
                         Symbol::LeftRound | Symbol::Dot => {
-                            self.revert(ptr)?;
-                            self.revert(ptr)?;
-                            let call = self.parse_subroutine_call(terms, ptr)?;
-                            terms.push(Term::Call(call));
+                            self.revert(d)?;
+                            self.revert(d)?;
+                            let call = self.parse_subroutine_call(d)?;
+                            d.terms.push(Term::Call(call));
                         }
                         _ => {
                             return_internal!();
                         }
                     }
                 } else {
-                    self.revert(ptr)?;
-                    terms.push(Term::VarName(id));
+                    self.revert(d)?;
+                    d.terms.push(Term::VarName(id));
                 }
             }
         }
 
-        Ok(terms.len() - 1)
+        Ok(d.terms.len() - 1)
     }
 
-    fn parse_name(&'a self, ptr: &mut usize) -> Result<Identifier<'a>, ParseError> {
-        self.expect(TokenKind::Identifier, ptr)?;
-        if let TokenData::Identifier(id) = self.tokens[*ptr - 1].data {
-            Ok(id)
+    fn parse_name(&self, d: &mut ParserData) -> Result<IdentifierId, ParseError> {
+        self.expect(TokenKind::Identifier, d)?;
+        if let TokenData::Identifier(_id) = d.tokens[d.ptr - 1].data {
+            Ok(d.ptr - 1)
         } else {
             return_internal!();
         }
     }
 
     // Token iteration:
-    fn expect(&self, kind: TokenKind, ptr: &mut usize) -> Result<(), ParseError> {
-        if *ptr >= self.tokens.len() {
+    fn expect(&self, kind: TokenKind, d: &mut ParserData) -> Result<(), ParseError> {
+        if d.ptr >= d.tokens.len() {
             return Err(ParseError {
                 message: format!("Expected {:?}, after reaching end of file", kind),
             });
         }
 
-        let curr = *ptr;
-        *ptr += 1;
+        let curr = d.ptr;
+        d.ptr += 1;
 
-        let tk: TokenKind = (&self.tokens[curr].data).into();
+        let tk: TokenKind = (&d.tokens[curr].data).into();
         if tk != kind {
             return Err(ParseError {
                 message: format!(
                     "Expected {:?}, but got {:?} at {}:{}",
-                    kind, self.tokens[curr].data, self.tokens[curr].file, self.tokens[curr].line
+                    kind, d.tokens[curr].data, d.tokens[curr].file, d.tokens[curr].line
                 ),
             });
         }
@@ -640,26 +609,30 @@ impl<'a> Parser<'a> {
         Ok(())
     }
 
-    fn expect_any(&self, kinds: Vec<TokenKind>, ptr: &mut usize) -> Result<TokenKind, ParseError> {
+    fn expect_any(
+        &self,
+        kinds: Vec<TokenKind>,
+        d: &mut ParserData,
+    ) -> Result<TokenKind, ParseError> {
         assert!(!kinds.is_empty());
 
-        if *ptr >= self.tokens.len() {
+        if d.ptr >= d.tokens.len() {
             return Err(ParseError {
                 message: format!("Expected one of {:?}, after reaching end of file", kinds),
             });
         }
 
-        let curr = *ptr;
-        *ptr += 1;
+        let curr = d.ptr;
+        d.ptr += 1;
 
-        let tk: TokenKind = (&self.tokens[curr].data).into();
+        let tk: TokenKind = (&d.tokens[curr].data).into();
         for kind in kinds.iter() {
             if tk == *kind {
                 return Ok(tk);
             }
         }
 
-        let tok = &self.tokens[curr];
+        let tok = &d.tokens[curr];
         Err(ParseError {
             message: format!(
                 "Expected one of {:?}, got {:?} in {}:{}",
@@ -671,22 +644,22 @@ impl<'a> Parser<'a> {
     fn expect_any_keyword(
         &self,
         kws: Vec<Keyword>,
-        ptr: &mut usize,
+        d: &mut ParserData,
     ) -> Result<Keyword, ParseError> {
         if kws.is_empty() {
             return_internal!();
         }
 
-        if *ptr >= self.tokens.len() {
+        if d.ptr >= d.tokens.len() {
             return Err(ParseError {
                 message: format!("Expected one of {:?}, after reaching end of file", kws),
             });
         }
 
-        let curr = *ptr;
-        *ptr += 1;
+        let curr = d.ptr;
+        d.ptr += 1;
 
-        if let TokenData::Keyword(k) = self.tokens[curr].data {
+        if let TokenData::Keyword(k) = d.tokens[curr].data {
             for kw in kws.iter() {
                 if k == *kw {
                     return Ok(k);
@@ -694,7 +667,7 @@ impl<'a> Parser<'a> {
             }
         }
 
-        let tok = &self.tokens[curr];
+        let tok = &d.tokens[curr];
         Err(ParseError {
             message: format!(
                 "Expected any of {:?}, got {:?} in {}:{}",
@@ -706,22 +679,22 @@ impl<'a> Parser<'a> {
     fn expect_any_symbol(
         &self,
         symbols: Vec<Symbol>,
-        ptr: &mut usize,
+        d: &mut ParserData,
     ) -> Result<Symbol, ParseError> {
         if symbols.is_empty() {
             return_internal!();
         }
 
-        if *ptr >= self.tokens.len() {
+        if d.ptr >= d.tokens.len() {
             return Err(ParseError {
                 message: format!("Expected one of {:?}, after reaching end of file", symbols),
             });
         }
 
-        let curr = *ptr;
-        *ptr += 1;
+        let curr = d.ptr;
+        d.ptr += 1;
 
-        if let TokenData::Symbol(s) = self.tokens[curr].data {
+        if let TokenData::Symbol(s) = d.tokens[curr].data {
             for sym in symbols.iter() {
                 if s == *sym {
                     return Ok(s);
@@ -729,7 +702,7 @@ impl<'a> Parser<'a> {
             }
         }
 
-        let tok = &self.tokens[curr];
+        let tok = &d.tokens[curr];
         Err(ParseError {
             message: format!(
                 "Expected any of {:?}, got {:?} in {}:{}",
@@ -738,22 +711,22 @@ impl<'a> Parser<'a> {
         })
     }
 
-    fn expect_keyword(&self, kw: Keyword, ptr: &mut usize) -> Result<(), ParseError> {
-        if *ptr >= self.tokens.len() {
+    fn expect_keyword(&self, kw: Keyword, d: &mut ParserData) -> Result<(), ParseError> {
+        if d.ptr >= d.tokens.len() {
             return Err(ParseError {
                 message: format!("Expected {:?}, after reaching end of file", kw),
             });
         }
 
-        let curr = *ptr;
-        *ptr += 1;
+        let curr = d.ptr;
+        d.ptr += 1;
 
-        if let TokenData::Keyword(w) = self.tokens[curr].data {
+        if let TokenData::Keyword(w) = d.tokens[curr].data {
             if w != kw {
                 return Err(ParseError {
                     message: format!(
                         "Expected {:?}, but got {:?} at {}:{}",
-                        kw, self.tokens[curr].data, self.tokens[curr].file, self.tokens[curr].line
+                        kw, d.tokens[curr].data, d.tokens[curr].file, d.tokens[curr].line
                     ),
                 });
             }
@@ -761,7 +734,7 @@ impl<'a> Parser<'a> {
             return Err(ParseError {
                 message: format!(
                     "Expected {:?}, but got {:?} at {}:{}",
-                    kw, self.tokens[curr].data, self.tokens[curr].file, self.tokens[curr].line
+                    kw, d.tokens[curr].data, d.tokens[curr].file, d.tokens[curr].line
                 ),
             });
         }
@@ -769,22 +742,22 @@ impl<'a> Parser<'a> {
         Ok(())
     }
 
-    fn expect_symbol(&self, sym: Symbol, ptr: &mut usize) -> Result<(), ParseError> {
-        if *ptr >= self.tokens.len() {
+    fn expect_symbol(&self, sym: Symbol, d: &mut ParserData) -> Result<(), ParseError> {
+        if d.ptr >= d.tokens.len() {
             return Err(ParseError {
                 message: format!("Expected {:?}, after reaching end of file", sym),
             });
         }
 
-        let curr = *ptr;
-        *ptr += 1;
+        let curr = d.ptr;
+        d.ptr += 1;
 
-        if let TokenData::Symbol(s) = self.tokens[curr].data {
+        if let TokenData::Symbol(s) = d.tokens[curr].data {
             if s != sym {
                 return Err(ParseError {
                     message: format!(
                         "Expected {:?}, but got {:?} at {}:{}",
-                        sym, self.tokens[curr].data, self.tokens[curr].file, self.tokens[curr].line
+                        sym, d.tokens[curr].data, d.tokens[curr].file, d.tokens[curr].line
                     ),
                 });
             }
@@ -792,7 +765,7 @@ impl<'a> Parser<'a> {
             return Err(ParseError {
                 message: format!(
                     "Expected {:?}, but got {:?} at {}:{}",
-                    sym, self.tokens[curr].data, self.tokens[curr].file, self.tokens[curr].line
+                    sym, d.tokens[curr].data, d.tokens[curr].file, d.tokens[curr].line
                 ),
             });
         }
@@ -800,39 +773,27 @@ impl<'a> Parser<'a> {
         Ok(())
     }
 
-    fn advance(&self, ptr: &mut usize) -> Result<(), ParseError> {
-        if *ptr >= self.tokens.len() {
+    fn advance(&self, d: &mut ParserData) -> Result<(), ParseError> {
+        if d.ptr >= d.tokens.len() {
             return Err(ParseError {
                 message: "Advance tokens after EOF.".to_string(),
             });
         }
 
-        *ptr += 1;
+        d.ptr += 1;
 
         Ok(())
     }
 
-    fn revert(&self, ptr: &mut usize) -> Result<(), ParseError> {
-        if *ptr == 0 {
+    fn revert(&self, d: &mut ParserData) -> Result<(), ParseError> {
+        if d.ptr == 0 {
             return Err(ParseError {
                 message: "Revert first token".to_string(),
             });
         }
 
-        *ptr -= 1;
+        d.ptr -= 1;
 
         Ok(())
     }
-
-    fn peek(&self, ptr: &mut usize) -> Result<&TokenData<'a>, ParseError> {
-        if *ptr >= self.tokens.len() {
-            return Err(ParseError {
-                message: "Peek tokens after EOF.".to_string(),
-            });
-        }
-
-        //Ok((&self.tokens[*ptr].data).into())
-        Ok(&self.tokens[*ptr].data)
-    }
 }
-

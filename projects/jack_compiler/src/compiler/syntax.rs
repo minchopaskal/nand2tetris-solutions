@@ -1,6 +1,7 @@
-use super::tokens::{Identifier, Keyword, Symbol};
+use super::tokens::{Keyword, Symbol, Token, TokenData};
 
 pub(crate) type TermId = usize;
+pub(crate) type IdentifierId = usize;
 
 // Program structure
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -36,24 +37,24 @@ impl ToString for SubroutineKind {
 }
 
 #[derive(Debug)]
-pub(crate) struct VarDec<'a> {
-    pub(crate) var_type: Type<'a>,
-    pub(crate) name: Identifier<'a>,
+pub(crate) struct VarDec {
+    pub(crate) var_type: Type,
+    pub(crate) name: IdentifierId,
 }
 
 #[derive(Debug)]
-pub(crate) struct Param<'a> {
-    pub(crate) p_type: Type<'a>,
-    pub(crate) name: Identifier<'a>,
+pub(crate) struct Param {
+    pub(crate) p_type: Type,
+    pub(crate) name: IdentifierId,
 }
 
 #[derive(Debug)]
-pub(crate) enum SubroutineType<'a> {
+pub(crate) enum SubroutineType {
     Void,
-    Type(Type<'a>),
+    Type(Type),
 }
 
-impl<'a> ToString for SubroutineType<'a> {
+impl ToString for SubroutineType {
     fn to_string(&self) -> String {
         match *self {
             SubroutineType::Void => "void".to_string(),
@@ -63,35 +64,35 @@ impl<'a> ToString for SubroutineType<'a> {
 }
 
 #[derive(Debug)]
-pub(crate) struct SubroutineBody<'a> {
-    pub(crate) var_decs: Vec<VarDec<'a>>,
-    pub(crate) stmts: Vec<Statement<'a>>,
+pub(crate) struct SubroutineBody {
+    pub(crate) var_decs: Vec<VarDec>,
+    pub(crate) stmts: Vec<Statement>,
 }
 
 #[derive(Debug)]
-pub(crate) struct SubroutineDec<'a> {
+pub(crate) struct SubroutineDec {
     pub(crate) kind: SubroutineKind,
-    pub(crate) f_type: SubroutineType<'a>,
-    pub(crate) name: Identifier<'a>,
-    pub(crate) params: Vec<Param<'a>>,
-    pub(crate) body: SubroutineBody<'a>,
+    pub(crate) f_type: SubroutineType,
+    pub(crate) name: IdentifierId,
+    pub(crate) params: Vec<Param>,
+    pub(crate) body: SubroutineBody,
 }
 
 #[derive(Debug)]
-pub(crate) struct ClassVarDec<'a> {
+pub(crate) struct ClassVarDec {
     pub(crate) kind: ClassVarKind,
-    pub(crate) var_dec: VarDec<'a>,
+    pub(crate) var_dec: VarDec,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub(crate) enum Type<'a> {
+pub(crate) enum Type {
     Int,
     Char,
     Boolean,
-    ClassName(Identifier<'a>),
+    ClassName(IdentifierId),
 }
 
-impl<'a> ToString for Type<'a> {
+impl ToString for Type {
     fn to_string(&self) -> String {
         match *self {
             Type::Int => "int".to_string(),
@@ -104,37 +105,37 @@ impl<'a> ToString for Type<'a> {
 
 // Statements
 #[derive(Debug)]
-pub(crate) enum Statement<'a> {
-    Let(LetStmt<'a>),
-    If(IfStmt<'a>),
-    While(WhileStmt<'a>),
-    Do(DoStmt<'a>),
+pub(crate) enum Statement {
+    Let(LetStmt),
+    If(IfStmt),
+    While(WhileStmt),
+    Do(DoStmt),
     Return(ReturnStmt),
 }
 
 #[derive(Debug)]
-pub(crate) struct LetStmt<'a> {
-    pub(crate) name: Identifier<'a>,
+pub(crate) struct LetStmt {
+    pub(crate) name: IdentifierId,
     pub(crate) idx: Option<Expression>,
     pub(crate) eq_to: Expression,
 }
 
 #[derive(Debug)]
-pub(crate) struct IfStmt<'a> {
+pub(crate) struct IfStmt {
     pub(crate) cond: Expression,
-    pub(crate) body: Vec<Statement<'a>>,
-    pub(crate) else_body: Vec<Statement<'a>>,
+    pub(crate) body: Vec<Statement>,
+    pub(crate) else_body: Vec<Statement>,
 }
 
 #[derive(Debug)]
-pub(crate) struct WhileStmt<'a> {
+pub(crate) struct WhileStmt {
     pub(crate) cond: Expression,
-    pub(crate) body: Vec<Statement<'a>>,
+    pub(crate) body: Vec<Statement>,
 }
 
 #[derive(Debug)]
-pub(crate) struct DoStmt<'a> {
-    pub(crate) call: SubroutineCall<'a>,
+pub(crate) struct DoStmt {
+    pub(crate) call: SubroutineCall,
 }
 
 #[derive(Debug)]
@@ -191,7 +192,7 @@ impl From<Symbol> for Op {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub(crate) enum UnaryOp {
     Unknown,
     Minus,
@@ -258,27 +259,27 @@ pub(crate) struct UnaryTerm {
 }
 
 #[derive(Debug)]
-pub(crate) enum Term<'a> {
+pub(crate) enum Term {
     Int(i32),
-    String(&'a str),
-    VarName(Identifier<'a>),
+    String(IdentifierId),
+    VarName(IdentifierId),
     KeywordConstant(KeywordConstant),
-    ArrayAccess(ArrayAccess<'a>),
-    Call(SubroutineCall<'a>),
+    ArrayAccess(ArrayAccess),
+    Call(SubroutineCall),
     BracketExpression(Expression),
     Unary(UnaryTerm),
 }
 
 #[derive(Debug)]
-pub(crate) struct SubroutineCall<'a> {
-    pub(crate) caller: Option<Identifier<'a>>,
-    pub(crate) name: Identifier<'a>,
+pub(crate) struct SubroutineCall {
+    pub(crate) caller: Option<IdentifierId>,
+    pub(crate) name: IdentifierId,
     pub(crate) args: Vec<Expression>,
 }
 
 #[derive(Debug)]
-pub(crate) struct ArrayAccess<'a> {
-    pub(crate) var: Identifier<'a>,
+pub(crate) struct ArrayAccess {
+    pub(crate) var: IdentifierId,
     pub(crate) idx: Expression,
 }
 
@@ -289,26 +290,45 @@ pub(crate) struct Expression {
 }
 
 #[derive(Default, Debug)]
-pub(crate) struct ClassNode<'a> {
-    pub(crate) name: Identifier<'a>,
-    pub(crate) fields: Vec<ClassVarDec<'a>>,
-    pub(crate) subroutines: Vec<SubroutineDec<'a>>,
+pub(crate) struct ClassNode {
+    pub(crate) name: IdentifierId,
+    pub(crate) fields: Vec<ClassVarDec>,
+    pub(crate) subroutines: Vec<SubroutineDec>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct SyntaxTree<'a> {
     pub(crate) filename: String,
-    pub(crate) terms: Vec<Term<'a>>,
-    pub(crate) root: ClassNode<'a>,
+    pub(crate) terms: Vec<Term>,
+    pub(crate) root: ClassNode,
+    pub(crate) tokens: Vec<Token<'a>>,
 }
 
 impl<'a> SyntaxTree<'a> {
     pub(crate) fn new() -> SyntaxTree<'a> {
-        SyntaxTree {
-            filename: String::default(),
-            terms: Vec::new(),
-            root: Default::default(),
+        Default::default()
+    }
+
+    pub(crate) fn get_this() -> &'a str {
+        "this"
+    }
+
+    pub(crate) fn get_type(&self) -> Type {
+        Type::ClassName(self.root.name)
+    }
+
+    pub(crate) fn get_id(&self, id: IdentifierId) -> &str {
+        if id == usize::MAX {
+            return "this";
+        }
+
+        match self.tokens[id].data {
+            TokenData::String(s) => s,
+            TokenData::Identifier(s) => s,
+            _ => panic!(
+                "Internal error: expected string/identifier for token {} in {}",
+                id, self.filename
+            ),
         }
     }
 }
-
