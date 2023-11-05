@@ -1,0 +1,95 @@
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/12/Memory.jack
+
+/**
+ * This library provides two services: direct access to the computer's main
+ * memory (RAM), and allocation and recycling of memory blocks. The Hack RAM
+ * consists of 32,768 words, each holding a 16-bit binary number.
+ */ 
+class Memory {
+    static Array ram;
+    static int head, tail;
+
+    /** Initializes the class. */
+    function void init() {
+      let ram = 0;
+
+      let head = 2048;
+      let tail = head;
+
+      let ram[head] = null;
+      let ram[head + 1] = 14336;
+
+      return;
+    }
+
+    /** Returns the RAM value at the given address. */
+    function int peek(int address) {
+      return ram[address];
+    }
+
+    /** Sets the RAM value at the given address to the given value. */
+    function void poke(int address, int value) {
+      let ram[address] = value;
+
+      return;
+    }
+
+    /** Finds an available RAM block of the given size and returns
+     *  a reference to its base address. */
+    function int alloc(int size) {
+      var int curr, prev, block;
+
+      let curr = head;
+      let prev = 0;
+      while (~(curr = 0)) {
+        if (ram[curr + 1] > (size + 1)) {
+          // Make prev element point to the new cutout element
+          if (~(prev = 0)) {
+            let ram[prev] = curr + size + 2;
+          } else { // curr == head
+            if (tail = head) {
+              let tail = curr + size + 2;
+            }
+            let head = curr + size + 2;
+          }
+
+          // cut out a new list and return it
+          let block = curr;
+          // Make sure the new cutout element points to the proper next element in the list
+          let ram[block + size + 2] = ram[curr];
+          let ram[block + size + 3] = ram[curr + 1] - size - 2;
+
+          // Set the size of the new block
+          let ram[block] = 0;
+          let ram[block + 1] = size + 2;
+
+          return block + 2;
+        }
+
+        // Jump to next element
+        let prev = curr;
+        let curr = ram[curr];
+      }
+
+      // Reached end of list without finding any proper
+      // place to allocate the memory at. Just return 0.
+      // TODO: try defragmentation
+      return 0;
+    }
+
+    /** De-allocates the given object (cast as an array) by making
+     *  it available for future allocations. */
+    function void deAlloc(Array o) {
+      var Array block;
+
+      let block = o - 2;
+      let block[0] = null;
+      let ram[tail] = block;
+      let tail = block;
+
+      return;
+    }    
+}

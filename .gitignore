@@ -5,3 +5,4 @@
 **/.DS_Store
 /projects/jack_compiler/**/*.xml
 /projects/jack_compiler/**/*.vm
+/projects/**/*.vm
